@@ -2,3 +2,6 @@ client_id.hpp
 deps/nlohmann_json
 compile_commands.json
 output
+*.swp
+token.txt
+__pycache__/
