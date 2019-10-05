@@ -47,20 +47,24 @@ def get_presence():
     return { "game": { "name": "skribble.io", "type": 0 }, "status": "dnd", "since": 91879201, "afk": False }
 
 def get_identify_payload():
+    import sys
     d = {}
 
     # Add token
     d['token'] = initial_REST_call_token
     
     # Create properties
-    p = {}
-    p['os'] = 'macOS'
-    p['browser'] = 'QueueBot.Test'
-    p['device'] = 'QueueBot.Test'
+    p = {
+        '$os': sys.platform,
+        '$browser': 'QueueBot',
+        '$device': 'QueueBot',
+        '$referrer': '',
+        '$referring_domain': ''
+    }    
     d['properties'] = p
 
     # Add presence
-    d['presence'] = get_presence()
+    # d['presence'] = get_presence()
 
     return d
 
@@ -80,6 +84,7 @@ async def respond(ws, state):
 atomic_s = None
 
 async def send_heartbeat(ws):
+    print('Sending heartbeat...')
     hbd = {'op': 1, 's': atomic_s, 'd': {}, 't': None}
     await ws.send(json.dumps(hbd))
 
@@ -110,11 +115,11 @@ async def opcode_10(state, packet):
     state['hb_interval_s'] = payload['heartbeat_interval'] / 1000
     return True
 
-async def send_opcode_2(ws, s):
-    resp = {'op': 2, 'd': get_identify_payload(), 's': atomic_s, 't': None}
+async def send_identify(ws, s):
+    resp = {'op': 2, 'd': get_identify_payload()}
     print('Sending opcode 2 packet:')
     ppj(resp)
-    await ws.send(s)
+    await ws.send(json.dumps(resp))
 
 async def start_bot(state):
     import os
@@ -124,12 +129,15 @@ async def start_bot(state):
             return
         # We have loaded our hello payload now to do the next connection step!
         # First let's send a heartbeat, you know, just in case
-        await send_heartbeat(websocket)
+        # await send_heartbeat(websocket)
         # Now let's send our identification package
-        await send_opcode_2(ws=websocket, s=state)
+        await send_identify(ws=websocket, s=state)
         print('Attempting to receive ready package...')
         ready = safe_j(await websocket.recv())
         ppj(ready)
+        if not check(ready,'op',0):
+            print('Exiting due to not being ready.')
+            return
         print('Starting heartbeater/message receiver!')
         heartbeater = asyncio.ensure_future(heartbeat_sender(ws=websocket, state=state))
         message_printer = asyncio.ensure_future(respond(ws=websocket, state=state))
