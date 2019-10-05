@@ -37,6 +37,7 @@ def populate_socket_url():
       }
     }
     """
+    global socketurl
     socketurl = rd["url"].rstrip('/') + "/?v=6&encoding=json"
 
 def get_heartbeat_full():
@@ -49,7 +50,7 @@ def get_identify_payload():
     d = {}
 
     # Add token
-    d['token'] = token
+    d['token'] = initial_REST_call_token
     
     # Create properties
     p = {}
@@ -63,43 +64,89 @@ def get_identify_payload():
 
     return d
 
-async def respond(ws, d, state):
-    opcode = d['op']
-    payload = d['d']
-    resp = {'d': None, 'op': None}
-    if opcode == 10:
-        # hello payload
-        state['hbi'] = payload['heartbeat_interval']
-        # need to send our own hb back... eventually
-        state['lbt'] = None # figure this out after, w/e
-        # okay anyways let's identify ourselves ezpz righto
-        resp['op'] = 2
-        resp['d'] = get_identify_payload() 
-        resp['s'] = d['s']
-         
-    await ws.send(json.dumps(resp))
+async def respond(ws, state):
+    while True:
+        packet = await ws.recv()
+        print('Received packet:')
+        ppj(safe_j(packet))
+        #opcode = d['op']
+        #payload = d['d']
+        #resp = {'d': None, 'op': None}
+        # await ws.send(json.dumps(resp))
+        d = safe_j(packet)
+        if 'op' not in d or d['op'] == 11:
+            return
 
-async def oneheartbeat():
+atomic_s = None
+
+async def send_heartbeat(ws):
+    hbd = {'op': 1, 's': atomic_s, 'd': {}, 't': None}
+    await ws.send(json.dumps(hbd))
+
+async def heartbeat_sender(ws, state):
+    while True:
+        await asyncio.sleep(state['hb_interval_s'])
+        await send_heartbeat(ws)
+
+def check(j,k,v):
+    return k in j and j[k] == v
+def safe_j(js):
+    try:
+        return json.loads(js)
+    except:
+        print("Could not load into json:", js)
+        return {}
+
+async def opcode_10(state, packet):
+    if not check(packet,'op', 10):
+        # Something went wrong, abort
+        print('Packet was not correct for opcode 10:')
+        ppj(packet)
+        return False
+    print('Got opcode 10:')
+    ppj(packet)
+    payload = packet['d']
+    state['hb_interval_ms'] = payload['heartbeat_interval']
+    state['hb_interval_s'] = payload['heartbeat_interval'] / 1000
+    return True
+
+async def send_opcode_2(ws, s):
+    resp = {'op': 2, 'd': get_identify_payload(), 's': atomic_s, 't': None}
+    print('Sending opcode 2 packet:')
+    ppj(resp)
+    await ws.send(s)
+
+async def start_bot(state):
     import os
     async with websockets.connect(socketurl, ssl=True) as websocket:
-        _weird = 0
-        _state = {}
-        while True:
-            # This is literally the worst thing I have ever done
-            # But it works, technically!
-            if os.path.isfile("stop.rm") or _weird > 5:
-                break
-            # Check to see if we're getting a message over the socket
-            rec = await websocket.recv()
-            try:
-                rec = json.loads(rec)
-            except:
-                # what happened? I don't know
-                print('Could not load into json:', rec)
-                _weird += 1
-                continue
-            await respond(ws=websocket, d=rec, state=_state)
+        state = {}
+        if await opcode_10(state, safe_j(await websocket.recv())) == False:
+            return
+        # We have loaded our hello payload now to do the next connection step!
+        # First let's send a heartbeat, you know, just in case
+        await send_heartbeat(websocket)
+        # Now let's send our identification package
+        await send_opcode_2(ws=websocket, s=state)
+        print('Attempting to receive ready package...')
+        ready = safe_j(await websocket.recv())
+        ppj(ready)
+        print('Starting heartbeater/message receiver!')
+        heartbeater = asyncio.ensure_future(heartbeat_sender(ws=websocket, state=state))
+        message_printer = asyncio.ensure_future(respond(ws=websocket, state=state))
+        await asyncio.wait(
+            [heartbeater, message_printer],
+            return_when=asyncio.FIRST_COMPLETED,
+        )
 
 def run_bot():
-    asyncio.get_event_loop().run_until_complete(oneheartbeat())
+    state = {}
+    populate_socket_url()
+    asyncio.get_event_loop().run_until_complete(start_bot(state))
 
+if __name__ == '__main__':
+    import sys
+    args = sys.argv
+    if 'info' in args:
+        print_api_call_details()
+    if 'go' in args:
+        run_bot()
