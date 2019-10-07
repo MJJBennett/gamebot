@@ -3,9 +3,15 @@
 
 #include "nlohmann/json.hpp"
 
-namespace web{
-namespace json = nlohmann::json;
-json get_bot_socket(){}
+namespace web
+{
+using json = nlohmann::json;
+
+json get_bot_socket()
+{
+    return {};
 }
+
+} // namespace web
 
 #endif // GAMEBOT_WEB_HPP
