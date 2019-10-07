@@ -7,7 +7,7 @@ AllowShortBlocksOnASingleLine: false
 AllowShortFunctionsOnASingleLine: None  
 AllowShortIfStatementsOnASingleLine: true  
 AllowShortLoopsOnASingleLine: false  
-AreakBeforeMultilineStrings: true  
+AlwaysBreakBeforeMultilineStrings: true  
 AlwaysBreakTemplateDeclarations: true  
 BinPackParameters: false  
 BreakBeforeBinaryOperators: false  
@@ -26,7 +26,6 @@ IndentCaseLabels: false
 IndentWidth: 4  
 IndentWrappedFunctionNames: false  
 IndentFunctionDeclarationAfterType: false  
-MaxEmptyLinesToKeep: 1  
 KeepEmptyLinesAtTheStartOfBlocks: false  
 NamespaceIndentation: None  
 PenaltyBreakBeforeFirstCallParameter: 1  
