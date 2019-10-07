@@ -7,10 +7,13 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(JSON_BuildTests OFF CACHE INTERNAL "")
 
 include_directories(include auth)
+include_directories(/usr/local/opt/openssl/include)
 
 find_package(Boost 1.71 COMPONENTS program_options REQUIRED)
+find_package(OpenSSL 1.0.1 REQUIRED MODULE)
 add_subdirectory(deps/nlohmann_json)
 
-add_executable(GameBot src/bot.cpp src/auth.cpp src/utils.cpp src/debug.cpp include/web.hpp)
+add_executable(GameBot src/bot.cpp src/auth.cpp src/utils.cpp src/debug.cpp include/web.hpp src/main.cpp include/flags.hpp include/bin_tools.hpp src/web.cpp)
+target_link_libraries(GameBot PUBLIC OpenSSL::SSL)
 target_link_libraries(GameBot PRIVATE Boost::program_options)
 target_link_libraries(GameBot PRIVATE nlohmann_json::nlohmann_json)

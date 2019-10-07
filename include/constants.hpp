@@ -8,9 +8,11 @@ namespace qb::constants
 {
 using std::string_view_literals::operator""sv;
 
-constexpr auto base_url  = "www.discordapp.com"sv;
-constexpr auto base_uri  = "https://discordapp.com/api/"sv;
-constexpr auto oauth_uri = "/api/oauth2/authorize?scope=bot&permissions=1&client_id="sv;
+constexpr auto bot_gateway_url  = "https://discordapp.com/api/v6/gateway/bot"sv;
+constexpr auto host = "https://discordapp.com"sv;
+constexpr int version = 10;
+constexpr auto port = "443"sv;
+constexpr auto bot_gateway_target = "/api/v6/gateway/bot"sv;
 }  // namespace qb::constants
 
 #endif  // CONSTANTS_HPP

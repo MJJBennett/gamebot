@@ -7,10 +7,7 @@ namespace web
 {
 using json = nlohmann::json;
 
-json get_bot_socket()
-{
-    return {};
-}
+json get_bot_socket();
 
 } // namespace web
 

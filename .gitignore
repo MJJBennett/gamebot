@@ -7,3 +7,5 @@ output
 *.swp
 token.txt
 __pycache__/
+
+src/ex-bot.cpp
