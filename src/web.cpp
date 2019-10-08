@@ -10,6 +10,7 @@
 #include <string>
 #include "constants.hpp"
 #include <iostream>
+#include "debug.hpp"
 
 nlohmann::json web::get_bot_socket()
 {
@@ -50,31 +51,38 @@ nlohmann::json web::get_bot_socket()
         }
 
         // Look up the domain name
+        qb::print("Looking up host:", host, "at port:", port);
         auto const results = resolver.resolve(host, port);
 
         // Make the connection on the IP address we get from a lookup
+        qb::print("Connecting to the IP address.");
         beast::get_lowest_layer(stream).connect(results);
 
         // Perform the SSL handshake
+        qb::print("Performing SSL handshake.");
         stream.handshake(ssl::stream_base::client);
 
         // Set up an HTTP GET request message
+        qb::print("Creating an HTTP GET request.");
         http::request<http::string_body> req{http::verb::get, target, version};
         req.set(http::field::host, host);
         req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
 #include "client_tok.hpp"
-        req.set("Authorization", "Bot " + __client_tok);
+        req.set(http::field::authorization, "Bot " + __client_tok);
 
         // Send the HTTP request to the remote host
+        qb::print("Sending the HTTP request.");
+        std::cout << req << std::endl;
         http::write(stream, req);
 
         // This buffer is used for reading and must be persisted
         beast::flat_buffer buffer;
 
         // Declare a container to hold the response
-        http::response<http::dynamic_body> res;
+        http::response<http::string_body> res;
 
         // Receive the HTTP response
+        qb::print("Receiving HTTP response.");
         http::read(stream, buffer, res);
 
         // Write the message to standard out
@@ -85,19 +93,29 @@ nlohmann::json web::get_bot_socket()
         stream.shutdown(ec);
         if(ec == asio::error::eof)
         {
+            qb::print("ASIO EOF!!");
             // Rationale:
             // http://stackoverflow.com/questions/25587403/boost-asio-ssl-async-shutdown-always-finishes-with-an-error
+            ec = {};
+        }
+        else if (ec == ssl::error::stream_truncated)
+        {
+            qb::print("IGNORING STREAM TRUNCATION OBVS");
             ec = {};
         }
         if(ec)
             throw beast::system_error{ec};
 
+        qb::print("We are gucci fam");
+        std::cout << res.body() << std::endl;
+
         // If we get here then the connection is closed gracefully
+        return json::parse(res.body());
     }
     catch(std::exception const& e)
     {
         std::cerr << "Error: " << e.what() << std::endl;
-        return EXIT_FAILURE;
+        return {};
     }
 
     return {};

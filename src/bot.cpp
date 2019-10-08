@@ -1,6 +1,7 @@
 #include "bot.hpp"
 #include "web.hpp"
 #include "bin_tools.hpp"
+#include "debug.hpp"
 
 qb::Bot::Bot(const Flag flag)
 {
@@ -14,5 +15,5 @@ void qb::Bot::start()
     // Step 01 - Make API call to Discord /gateway/bot/ to get a WebSocket URL
     // This is something we might need to do intermittently, so we call a function to do it.
     auto socket_info = web::get_bot_socket();
-
+    qb::print(socket_info.dump(4));
 }

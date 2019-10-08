@@ -3,6 +3,8 @@
 
 #include <iostream>
 
+namespace qb
+{
 template <typename T>
 void print(T t)
 {
@@ -15,5 +17,6 @@ void print(T t, Ts... ts)
     std::cout << t << ' ';
     print(std::forward<Ts>(ts)...);
 }
+} // namespace qb
 
-#endif  // DEBUG_HPP
+#endif // DEBUG_HPP
