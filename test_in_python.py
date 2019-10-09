@@ -4,7 +4,7 @@ import asyncio, time
 
 # Globals
 initial_REST_call_url = "https://discordapp.com/api/v6/gateway/bot"
-with open("token.txt", "r") as file:
+with open("auth/token.txt", "r") as file:
     initial_REST_call_token = file.read().strip('\n\r\s')
 initial_REST_call_auth_head = "Bot " + initial_REST_call_token
 initial_REST_call_headers = {'Content-Type': 'application/json', 'Authorization': initial_REST_call_auth_head}

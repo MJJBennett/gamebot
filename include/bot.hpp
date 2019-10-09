@@ -9,7 +9,7 @@ public:
     // Types
     enum class Flag : int
     {
-        None = 0,
+        None     = 0,
         LazyInit = 1
     };
 

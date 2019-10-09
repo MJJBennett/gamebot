@@ -9,12 +9,13 @@ namespace qb
 using std::string_view_literals::operator""sv;
 
 constexpr auto oversend = ""sv;
-constexpr auto unknown = ""sv;
+constexpr auto unknown  = ""sv;
 
-std::string_view err_str(const int ec){
-if (ec == 4002) return oversend;
-return unknown;
+std::string_view err_str(const int ec)
+{
+    if (ec == 4002) return oversend;
+    return unknown;
 }
-}  // namespace qb::constants
+} // namespace qb
 
-#endif //ERRORCODES_HPP
+#endif // ERRORCODES_HPP
