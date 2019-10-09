@@ -1,6 +1,6 @@
 #include "bot.hpp"
 #include "web.hpp"
-#include "bin_tools.hpp"
+#include "utils.hpp"
 #include "debug.hpp"
 
 qb::Bot::Bot(const Flag flag)

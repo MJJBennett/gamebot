@@ -1,6 +1,7 @@
 #include "web.hpp"
 #include "constants.hpp"
 #include "debug.hpp"
+#include "utils.hpp"
 #include <boost/asio/connect.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/error.hpp>
@@ -27,6 +28,7 @@ nlohmann::json web::get_bot_socket()
         const auto target      = std::string(qb::constants::bot_gateway_target);
         const int version      = qb::constants::version;
 
+        // This IO context is a powerful thing, see CPPCon 2018 Falco talk
         asio::io_context ioc;
 
         tcp::resolver resolver(ioc);
@@ -58,15 +60,14 @@ nlohmann::json web::get_bot_socket()
         http::request<http::string_body> req{http::verb::get, target, version};
         req.set(http::field::host, host);
         req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
-#include "client_tok.hpp" // This is what we call "compile-time I/O"
-        req.set(http::field::authorization, "Bot " + __client_tok);
+        req.set(http::field::authorization, "Bot " + qb::detail::get_bot_token());
 
         // Send the HTTP request to the remote host
         qb::print("Sending the following HTTP request:");
         qb::print(req);
         http::write(stream, req);
 
-        beast::flat_buffer buffer; // Useful buffer object
+        beast::flat_buffer buffer;             // Useful buffer object
         http::response<http::string_body> res; // Holds response
 
         // Receive the HTTP response
