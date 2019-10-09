@@ -10,6 +10,8 @@ using json = nlohmann::json;
 
 json get_bot_socket();
 
+void* acquire_websocket(const std::string& url);
+
 } // namespace web
 
 #endif // GAMEBOT_WEB_HPP

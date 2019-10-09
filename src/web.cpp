@@ -13,6 +13,11 @@
 #include <iostream>
 #include <string>
 
+void* web::acquire_websocket(const std::string& socket_url)
+{
+    return nullptr;
+}
+
 nlohmann::json web::get_bot_socket()
 {
     namespace beast = boost::beast;
@@ -23,6 +28,7 @@ nlohmann::json web::get_bot_socket()
 
     try
     {
+        // Step 02 - Set things up to make an API (HTTP) request.
         const std::string host = std::string(qb::constants::host);
         const auto port        = std::string(qb::constants::port);
         const auto target      = std::string(qb::constants::bot_gateway_target);
@@ -62,7 +68,7 @@ nlohmann::json web::get_bot_socket()
         req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
         req.set(http::field::authorization, "Bot " + qb::detail::get_bot_token());
 
-        // Send the HTTP request to the remote host
+        // Step 03.1 - Send the HTTP request to the remote host
         qb::print("Sending the following HTTP request:");
         qb::print(req);
         http::write(stream, req);
@@ -70,7 +76,7 @@ nlohmann::json web::get_bot_socket()
         beast::flat_buffer buffer;             // Useful buffer object
         http::response<http::string_body> res; // Holds response
 
-        // Receive the HTTP response
+        // Step 03.2 - Receive the HTTP response
         qb::print("Receiving HTTP response.");
         http::read(stream, buffer, res);
 
@@ -84,6 +90,7 @@ nlohmann::json web::get_bot_socket()
         }
         if (ec) throw beast::system_error{ec};
 
+        // Step 04 - Translate the response to JSON
         return json::parse(res.body());
     }
     catch (const std::exception& e)
