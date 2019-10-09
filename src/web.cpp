@@ -62,8 +62,8 @@ nlohmann::json web::get_bot_socket()
         req.set(http::field::authorization, "Bot " + __client_tok);
 
         // Send the HTTP request to the remote host
-        qb::print("Sending the HTTP request.");
-        std::cout << req << std::endl;
+        qb::print("Sending the following HTTP request:");
+        qb::print(req);
         http::write(stream, req);
 
         beast::flat_buffer buffer; // Useful buffer object
