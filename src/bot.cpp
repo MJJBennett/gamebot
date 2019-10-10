@@ -20,10 +20,13 @@ void qb::Bot::start()
     // Step 05 - Get the socket URL from the JSON data and save it with explicit version/encoding
     const std::string socket_url = socket_info["url"];
     // This isn't particularly efficient but optimizing startup time doesn't seem like a priority
-    const std::string full_socket_url = socket_url + std::string("/?v=6&encoding=json");
 
     // Step 06 - Start running bot core.
+
     // This requires a connection to the remote websocket server.
     // We will use our abstractions in web.hpp to acquire this for us.
-    auto ws = web::acquire_websocket(full_socket_url);
+    auto ws = web::acquire_websocket(socket_url);
+    ws.validate();
+    // For now, just disconnect again, as this is a work in progress.
+    qb::print("Finishing bot execution...");
 }

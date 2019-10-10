@@ -13,6 +13,7 @@ constexpr auto host               = "discordapp.com"sv;
 constexpr int version             = 11;
 constexpr auto port               = "443"sv;
 constexpr auto bot_gateway_target = "/api/v6/gateway/bot"sv;
+constexpr auto websocket_target   = "/?v=6&encoding=json"sv;
 } // namespace qb::constants
 
 #endif // CONSTANTS_HPP
