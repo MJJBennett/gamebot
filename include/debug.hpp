@@ -5,45 +5,48 @@
 
 namespace qb
 {
+namespace log
+{
 template <typename T>
-void print(T t)
+void normal(T t)
 {
     std::cout << t << std::endl;
 }
 
 template <typename T, typename... Ts>
-void print(T t, Ts... ts)
+void normal(T t, Ts... ts)
 {
     std::cout << t << ' ';
-    print(std::forward<Ts>(ts)...);
+    normal(std::forward<Ts>(ts)...);
 }
 
 template <typename T>
-void _error(T t)
+void _err(T t)
 {
     std::cerr << t << std::endl;
 }
 
 template <typename T, typename... Ts>
-void _error(T t, Ts... ts)
+void _err(T t, Ts... ts)
 {
     std::cerr << t << ' ';
-    _error(std::forward<Ts>(ts)...);
+    _err(std::forward<Ts>(ts)...);
 }
 
 template <typename T>
-void error(T t)
+void err(T t)
 {
     // Only called when printing error with one argument
     std::cerr << "Error: " << t << std::endl;
 }
 
 template <typename T, typename... Ts>
-void error(T t, Ts... ts)
+void err(T t, Ts... ts)
 {
     std::cerr << "Error: " << t << ' ';
-    _error(std::forward<Ts>(ts)...);
+    _err(std::forward<Ts>(ts)...);
 }
+} // namespace log
 } // namespace qb
 
 #endif // DEBUG_HPP

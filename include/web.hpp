@@ -6,6 +6,7 @@
 #include "boost/beast/websocket/stream_fwd.hpp"
 #include "nlohmann/json.hpp"
 #include <memory>
+#include <optional>
 
 namespace web
 {
@@ -16,8 +17,9 @@ using WebSocket = boost::beast::websocket::stream<boost::beast::ssl_stream<boost
 // Class definitions
 class WSWrapper
 {
+    WSWrapper();
+
 public:
-    WSWrapper() = delete;
     WSWrapper(std::unique_ptr<WebSocket> ws);
     ~WSWrapper();
     WSWrapper(WSWrapper&& wsw);
@@ -26,6 +28,11 @@ public:
         return ws_.get();
     }
     void validate();
+    bool operator==(const WSWrapper& other)
+    {
+        return other.ws_.get() == ws_.get();
+    }
+    void disconnect();
 
 private:
     std::unique_ptr<WebSocket> ws_;
@@ -33,7 +40,7 @@ private:
 
 json get_bot_socket();
 
-WSWrapper acquire_websocket(const std::string& url);
+[[nodiscard]] std::optional<WSWrapper> acquire_websocket(const std::string& url);
 
 } // namespace web
 

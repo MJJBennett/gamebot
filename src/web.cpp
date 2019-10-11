@@ -1,6 +1,7 @@
 #include "web.hpp"
 #include "constants.hpp"
 #include "debug.hpp"
+#include "json_utils.hpp"
 #include "utils.hpp"
 #include <boost/asio/connect.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -21,10 +22,11 @@ namespace asio      = boost::asio;
 namespace ssl       = asio::ssl;
 namespace websocket = beast::websocket;
 using tcp           = asio::ip::tcp;
+using json          = nlohmann::json;
 
 web::WSWrapper::~WSWrapper()
 {
-    qb::print("Closing the websocket.");
+    qb::log::normal("Closing the websocket.");
     if (ws_ == nullptr)
     {
         // Note - this happens when ws_ is moved from (move constructor)
@@ -34,7 +36,7 @@ web::WSWrapper::~WSWrapper()
         return;
     }
     ws_->close(websocket::close_code::normal);
-    qb::print("Closed the websocket.");
+    qb::log::normal("Closed the websocket.");
 }
 
 web::WSWrapper::WSWrapper(std::unique_ptr<WebSocket> ws) : ws_(std::move(ws))
@@ -45,19 +47,25 @@ web::WSWrapper::WSWrapper(web::WSWrapper&& wsw) : ws_{std::move(wsw.ws_)}
 {
 }
 
-void web::WSWrapper::validate()
+void web::WSWrapper::disconnect()
 {
-    qb::print("Validating WSWrapper.");
-    qb::print("Is ws_ null?", (ws_ ? "no" : "yes"));
+    ws_.reset();
 }
 
-web::WSWrapper web::acquire_websocket(const std::string& psocket_url)
+void web::WSWrapper::validate()
 {
+    qb::log::normal("Validating WSWrapper.");
+    qb::log::normal("Is ws_ null?", (ws_ ? "no" : "yes"));
+}
+
+std::optional<web::WSWrapper> web::acquire_websocket(const std::string& psocket_url)
+{
+    /** Step 07 - Connect to the socket using websockets and SSL. **/
     const auto port = std::string(qb::constants::port);
-    qb::print("Connecting to websocket at URL:", psocket_url, "& port:", port);
-    qb::print("Fixing the URL to remove wss://...");
+    qb::log::normal("Connecting to websocket at URL:", psocket_url, "& port:", port);
+    qb::log::normal("Fixing the URL to remove wss://...");
     const auto socket_url = psocket_url.substr(6);
-    qb::print("Okay, using", socket_url, "instead.");
+    qb::log::normal("Okay, using", socket_url, "instead.");
 
     // The io_context is required for all I/O
     asio::io_context ioc;
@@ -71,13 +79,13 @@ web::WSWrapper web::acquire_websocket(const std::string& psocket_url)
     tcp::resolver resolver{ioc};
     web::WSWrapper ws{std::make_unique<web::WebSocket>(ioc, ctx)};
 
-    qb::print("Resolving websocket URL.");
+    qb::log::normal("Resolving websocket URL.");
     auto const results = resolver.resolve(socket_url, port);
 
-    qb::print("Connecting to the IP address using Asio.");
+    qb::log::normal("Connecting to the IP address using Asio.");
     asio::connect(ws->next_layer().next_layer(), results.begin(), results.end());
 
-    qb::print("Performing SSL handshake.");
+    qb::log::normal("Performing SSL handshake.");
     ws->next_layer().handshake(ssl::stream_base::client);
 
     // Set a decorator to change the User-Agent of the handshake
@@ -86,18 +94,25 @@ web::WSWrapper web::acquire_websocket(const std::string& psocket_url)
                 std::string(BOOST_BEAST_VERSION_STRING) + " websocket-client-coro");
     }));
 
-    qb::print("Performing the websocket handshake.");
+    qb::log::normal("Performing the websocket handshake.");
     ws->handshake(socket_url, std::string(qb::constants::websocket_target));
 
     // This buffer will hold the incoming message
     beast::flat_buffer buffer;
 
-    // Read a message into our buffer
-    qb::print("Reading the Hello payload into the buffer.");
+    /** Step 08 - Receive OPCODE 10 packet. **/
+    qb::log::normal("Reading the Hello payload into the buffer.");
     ws->read(buffer);
 
     // The make_printable() function helps print a ConstBufferSequence
-    std::cout << beast::make_printable(buffer.data()) << std::endl;
+    const auto resp = json::parse(beast::buffers_to_string(buffer.data()));
+    // qb::log::normal(beast::make_printable(buffer.data()));
+    qb::log::normal("Is it opcode 10?", (qb::json::val_eq(resp, "op", 10) ? "Yep!" : "Nope!!!"));
+    if (!qb::json::val_eq(resp, "op", 10))
+    {
+        ws.disconnect();
+        return {};
+    };
 
     // Send the message
     // ws->write(asio::buffer(std::string("")));
@@ -130,35 +145,35 @@ nlohmann::json web::get_bot_socket()
         if (!SSL_set_tlsext_host_name(stream.native_handle(), host.data()))
         {
             beast::error_code ec{static_cast<int>(::ERR_get_error()), asio::error::get_ssl_category()};
-            qb::error("Encountered error attempting to set SNI hostname.");
+            qb::log::err("Encountered error attempting to set SNI hostname.");
             throw beast::system_error{ec};
         }
 
-        qb::print("Looking up host:", host, "at port:", port);
+        qb::log::normal("Looking up host:", host, "at port:", port);
         const auto results = resolver.resolve(host, port);
 
-        qb::print("Connecting to the IP address.");
+        qb::log::normal("Connecting to the IP address.");
         beast::get_lowest_layer(stream).connect(results);
 
-        qb::print("Performing SSL handshake.");
+        qb::log::normal("Performing SSL handshake.");
         stream.handshake(ssl::stream_base::client);
 
-        qb::print("Creating an HTTP GET request.");
+        qb::log::normal("Creating an HTTP GET request.");
         http::request<http::string_body> req{http::verb::get, target, version};
         req.set(http::field::host, host);
         req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
         req.set(http::field::authorization, "Bot " + qb::detail::get_bot_token());
 
         // Step 03.1 - Send the HTTP request to the remote host
-        qb::print("Sending the following HTTP request:");
-        qb::print(req);
+        qb::log::normal("Sending the following HTTP request:");
+        qb::log::normal(req);
         http::write(stream, req);
 
         beast::flat_buffer buffer;             // Useful buffer object
         http::response<http::string_body> res; // Holds response
 
         // Step 03.2 - Receive the HTTP response
-        qb::print("Receiving HTTP response.");
+        qb::log::normal("Receiving HTTP response.");
         http::read(stream, buffer, res);
 
         // Gracefully close the stream
@@ -166,7 +181,7 @@ nlohmann::json web::get_bot_socket()
         stream.shutdown(ec);
         if (ec == asio::error::eof || ec == ssl::error::stream_truncated)
         {
-            qb::print("Ignoring error:", beast::system_error{ec}.what());
+            qb::log::normal("Ignoring error:", beast::system_error{ec}.what());
             ec = {};
         }
         if (ec) throw beast::system_error{ec};
@@ -176,7 +191,7 @@ nlohmann::json web::get_bot_socket()
     }
     catch (const std::exception& e)
     {
-        qb::error(e.what());
+        qb::log::err(e.what());
         return {{"Error", e.what()}};
     }
 }

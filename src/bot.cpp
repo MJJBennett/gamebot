@@ -1,5 +1,6 @@
 #include "bot.hpp"
 #include "debug.hpp"
+#include "json_utils.hpp"
 #include "utils.hpp"
 #include "web.hpp"
 
@@ -15,7 +16,7 @@ void qb::Bot::start()
     // Step 01 - Make API call to Discord /gateway/bot/ to get a WebSocket URL
     // This is something we might need to do intermittently, so we call a function to do it.
     auto socket_info = web::get_bot_socket();
-    qb::print(socket_info.dump(4));
+    qb::log::normal(socket_info.dump(4));
 
     // Step 05 - Get the socket URL from the JSON data and save it with explicit version/encoding
     const std::string socket_url = socket_info["url"];
@@ -26,7 +27,14 @@ void qb::Bot::start()
     // This requires a connection to the remote websocket server.
     // We will use our abstractions in web.hpp to acquire this for us.
     auto ws = web::acquire_websocket(socket_url);
-    ws.validate();
+    if (!ws)
+    {
+        qb::log::normal("Ending bot execution early.");
+        return;
+    }
+    web::WSWrapper websocket = std::move(*ws);
+    websocket.validate();
+
     // For now, just disconnect again, as this is a work in progress.
-    qb::print("Finishing bot execution...");
+    qb::log::normal("Finishing bot execution...");
 }
