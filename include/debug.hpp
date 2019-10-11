@@ -33,10 +33,36 @@ void _err(T t, Ts... ts)
     _err(std::forward<Ts>(ts)...);
 }
 
-template<typename... Ts>
+template <typename... Ts>
 void err(Ts... ts)
 {
     _err("Error:", std::forward<Ts>(ts)...);
+}
+
+template <typename... Ts>
+void warn(Ts... ts)
+{
+    normal("Warning:", std::forward<Ts>(ts)...);
+}
+
+template <typename... Ts>
+void point(Ts... ts)
+{
+    normal(">", std::forward<Ts>(ts)...);
+}
+
+template <typename... Ts>
+void data(Ts... ts)
+{
+    normal("[Data Dump]");
+    normal(std::forward<Ts>(ts)...);
+    normal("===========");
+}
+
+template <typename K, typename V>
+void value(const K& name, const V& value)
+{
+    normal(">>> The value of", name, "is", value);
 }
 } // namespace log
 } // namespace qb
