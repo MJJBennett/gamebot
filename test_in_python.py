@@ -126,7 +126,7 @@ async def opcode_10(state, packet):
     print('Got opcode 10:')
     ppj(packet)
     payload = packet['d']
-    # Step 10 - Retrieve heartbeat interval information from hello paacket.
+    # Step 10 - Retrieve heartbeat interval information from hello packet.
     state['hb_interval_ms'] = payload['heartbeat_interval']
     state['hb_interval_s'] = payload['heartbeat_interval'] / 1000
     return True

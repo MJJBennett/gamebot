@@ -40,7 +40,7 @@ private:
 
 json get_bot_socket();
 
-[[nodiscard]] std::optional<WSWrapper> acquire_websocket(const std::string& url);
+[[nodiscard]] WSWrapper acquire_websocket(const std::string& url);
 
 } // namespace web
 

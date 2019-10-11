@@ -58,7 +58,7 @@ void web::WSWrapper::validate()
     qb::log::normal("Is ws_ null?", (ws_ ? "no" : "yes"));
 }
 
-std::optional<web::WSWrapper> web::acquire_websocket(const std::string& psocket_url)
+web::WSWrapper web::acquire_websocket(const std::string& psocket_url)
 {
     /** Step 07 - Connect to the socket using websockets and SSL. **/
     const auto port = std::string(qb::constants::port);
@@ -96,26 +96,6 @@ std::optional<web::WSWrapper> web::acquire_websocket(const std::string& psocket_
 
     qb::log::normal("Performing the websocket handshake.");
     ws->handshake(socket_url, std::string(qb::constants::websocket_target));
-
-    // This buffer will hold the incoming message
-    beast::flat_buffer buffer;
-
-    /** Step 08 - Receive OPCODE 10 packet. **/
-    qb::log::normal("Reading the Hello payload into the buffer.");
-    ws->read(buffer);
-
-    // The make_printable() function helps print a ConstBufferSequence
-    const auto resp = json::parse(beast::buffers_to_string(buffer.data()));
-    // qb::log::normal(beast::make_printable(buffer.data()));
-    qb::log::normal("Is it opcode 10?", (qb::json::val_eq(resp, "op", 10) ? "Yep!" : "Nope!!!"));
-    if (!qb::json::val_eq(resp, "op", 10))
-    {
-        ws.disconnect();
-        return {};
-    };
-
-    // Send the message
-    // ws->write(asio::buffer(std::string("")));
 
     return std::move(ws);
 }
