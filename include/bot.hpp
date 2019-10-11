@@ -14,9 +14,11 @@ public:
     };
 
 public:
-    // Member variables
     explicit Bot(Flag = Flag::None);
     void start();
+
+private:
+    unsigned int hb_interval_ms_ = 0;
 };
 } // namespace qb
 

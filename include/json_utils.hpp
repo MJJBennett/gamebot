@@ -5,6 +5,7 @@
 namespace qb::json_utils
 {
 using json = nlohmann::json;
+
 template <typename V>
 bool val_eq(const json& jd, const std::string& key, const V& v)
 {
@@ -13,6 +14,19 @@ bool val_eq(const json& jd, const std::string& key, const V& v)
         return (*val_it).get<V>() == v;
     }
     return false;
+}
+
+inline json get_identify_packet(const std::string& token)
+{
+    return json{{"op", 2},
+                {"d",
+                 {{"token", token},
+                  {"properties",
+                   {{"$os", "macOS"},
+                    {"$browser", "QueueBot"},
+                    {"$device", "QueueBot"},
+                    {"$referrer", ""},
+                    {"$referring_domain", ""}}}}}};
 }
 } // namespace qb::json_utils
 
