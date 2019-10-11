@@ -51,10 +51,10 @@ void point(Ts... ts)
     normal(">", std::forward<Ts>(ts)...);
 }
 
-template <typename... Ts>
-void data(Ts... ts)
+template <typename L, typename... Ts>
+void data(const L& label, Ts... ts)
 {
-    normal("[Data Dump]");
+    normal(">> DATA:", label);
     normal(std::forward<Ts>(ts)...);
     normal("===========");
 }
