@@ -33,18 +33,10 @@ void _err(T t, Ts... ts)
     _err(std::forward<Ts>(ts)...);
 }
 
-template <typename T>
-void err(T t)
+template<typename... Ts>
+void err(Ts... ts)
 {
-    // Only called when printing error with one argument
-    std::cerr << "Error: " << t << std::endl;
-}
-
-template <typename T, typename... Ts>
-void err(T t, Ts... ts)
-{
-    std::cerr << "Error: " << t << ' ';
-    _err(std::forward<Ts>(ts)...);
+    _err("Error:", std::forward<Ts>(ts)...);
 }
 } // namespace log
 } // namespace qb
