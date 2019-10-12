@@ -3,6 +3,7 @@
 #include "json_utils.hpp"
 #include "utils.hpp"
 #include "web.hpp"
+#include <boost/asio/steady_timer.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/websocket.hpp>
 #include <boost/beast/websocket/ssl.hpp>
@@ -24,7 +25,14 @@ qb::Bot::Bot(const Flag flag)
     start();
 }
 
-
+void qb::Bot::ping_sender(const boost::system::error_code& error)
+{
+    // Send a ping
+    const static auto heartbeat_msg = json{}.dump();
+    ws_->async_write(asio::buffer(heartbeat_msg), [](const auto& ec, auto bytes_transferred) {});
+    boost::asio::steady_timer timer(ioc_, std::chrono::steady_clock::now() + std::chrono::seconds(60));
+    timer.async_wait(std::bind(&qb::Bot::ping_sender, this, std::placeholders::_1));
+}
 
 void qb::Bot::start()
 {
@@ -59,7 +67,7 @@ void qb::Bot::start()
     qb::log::normal("Is it opcode 10?", (qb::json_utils::val_eq(resp, "op", 10) ? "Yep!" : "Nope!!!"));
     if (!qb::json_utils::val_eq(resp, "op", 10))
     {
-        qb::log::warn("Ending bot execution early.", __LINE__, __FILE__);
+        qb::log::warn("Ending bot execution early. @", __LINE__, __FILE__);
         ws.disconnect();
         return;
     }
@@ -91,7 +99,7 @@ void qb::Bot::start()
     qb::log::normal("Is it opcode 0?", (qb::json_utils::val_eq(ready_resp, "op", 0) ? "Yep!" : "Nope!!!"));
     if (!qb::json_utils::val_eq(ready_resp, "op", 0))
     {
-        qb::log::warn("Ending bot execution early", __LINE__, __FILE__);
+        qb::log::warn("Ending bot execution early. @", __LINE__, __FILE__);
         ws.disconnect();
         return;
     }

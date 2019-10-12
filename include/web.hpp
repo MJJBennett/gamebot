@@ -1,12 +1,11 @@
 #ifndef GAMEBOT_WEB_HPP
 #define GAMEBOT_WEB_HPP
 
-#include "boost/asio/ip/tcp.hpp"
-#include "boost/beast/ssl/ssl_stream.hpp"
-#include "boost/beast/websocket/stream_fwd.hpp"
-#include "nlohmann/json.hpp"
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/beast/ssl/ssl_stream.hpp>
+#include <boost/beast/websocket/stream_fwd.hpp>
 #include <memory>
-#include <optional>
+#include <nlohmann/json.hpp>
 
 namespace web
 {
@@ -17,9 +16,8 @@ using WebSocket = boost::beast::websocket::stream<boost::beast::ssl_stream<boost
 // Class definitions
 class WSWrapper
 {
-    WSWrapper();
-
 public:
+    WSWrapper();
     WSWrapper(std::unique_ptr<WebSocket> ws);
     ~WSWrapper();
     WSWrapper(WSWrapper&& wsw);

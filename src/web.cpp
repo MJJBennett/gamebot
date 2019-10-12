@@ -43,6 +43,10 @@ web::WSWrapper::WSWrapper(std::unique_ptr<WebSocket> ws) : ws_(std::move(ws))
 {
 }
 
+web::WSWrapper::WSWrapper()
+{
+}
+
 web::WSWrapper::WSWrapper(web::WSWrapper&& wsw) : ws_{std::move(wsw.ws_)}
 {
 }
