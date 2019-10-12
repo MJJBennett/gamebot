@@ -14,7 +14,15 @@ find_package(Boost 1.71 COMPONENTS program_options REQUIRED)
 find_package(OpenSSL REQUIRED)
 add_subdirectory(deps/nlohmann_json)
 
-add_executable(GameBot src/bot.cpp src/utils.cpp src/debug.cpp include/web.hpp src/main.cpp include/flags.hpp src/web.cpp)
+add_executable(GameBot
+    include/flags.hpp
+    src/utils.cpp include/utils.hpp
+    src/debug.cpp include/debug.hpp
+    src/wswrapper.cpp include/wswrapper.hpp
+    src/web.cpp include/web.hpp
+    src/bot.cpp include/bot.hpp
+    src/main.cpp
+)
 target_link_libraries(GameBot PUBLIC OpenSSL::SSL)
 target_link_libraries(GameBot PRIVATE Boost::program_options)
 target_link_libraries(GameBot PRIVATE nlohmann_json::nlohmann_json)
