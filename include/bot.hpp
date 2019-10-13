@@ -33,6 +33,8 @@ private:
     void read_handler(const boost::system::error_code& error, std::size_t bytes_transferred);
     void write_complete_handler(const boost::system::error_code& error, std::size_t bytes_transferred);
 
+    void dispatch_ping_in(unsigned int ms);
+
 private:
     unsigned int hb_interval_ms_{0};
     std::optional<web::WSWrapper> ws_;

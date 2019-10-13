@@ -28,6 +28,12 @@ qb::Bot::Bot(const Flag flag)
     start();
 }
 
+void qb::Bot::dispatch_ping_in(unsigned int ms)
+{
+    timer_->expires_from_now(boost::asio::chrono::milliseconds(ms));
+    timer_->async_wait(std::bind(&qb::Bot::ping_sender, this, std::placeholders::_1));
+}
+
 void qb::Bot::ping_sender(const boost::system::error_code& error)
 {
     if (error)
@@ -37,19 +43,16 @@ void qb::Bot::ping_sender(const boost::system::error_code& error)
     }
     if (hb_interval_ms_ < 11)
     {
-        qb::log::warn("Very short heartbeat interval of", hb_interval_ms_,
-                      "- pausing for a few seconds.");
-
-        timer_->expires_from_now(boost::asio::chrono::seconds(5));
-        timer_->async_wait(std::bind(&qb::Bot::ping_sender, this, std::placeholders::_1));
+        qb::log::warn("Pausing ping sending due to short interval:", hb_interval_ms_);
+        dispatch_ping_in(5000);
+        return;
     }
     // Check if we've already fired an async_write
     if (outstanding_write_)
     {
         // Pings aren't that important, try again in a second
         qb::log::point("Outstanding write, skipping ping for a second.");
-        timer_->expires_from_now(boost::asio::chrono::milliseconds(hb_interval_ms_));
-        timer_->async_wait(std::bind(&qb::Bot::ping_sender, this, std::placeholders::_1));
+        dispatch_ping_in(10000);
         return;
     }
 #ifdef CAREFUL_NO_DDOS
@@ -67,8 +70,7 @@ void qb::Bot::ping_sender(const boost::system::error_code& error)
                                                   std::placeholders::_1, std::placeholders::_2));
     pings_sent_ += 1;
     outstanding_write_ = true;
-    timer_->expires_from_now(boost::asio::chrono::milliseconds(hb_interval_ms_));
-    timer_->async_wait(std::bind(&qb::Bot::ping_sender, this, std::placeholders::_1));
+    dispatch_ping_in(hb_interval_ms_);
 }
 
 void qb::Bot::write_complete_handler(const boost::system::error_code& error, std::size_t bytes_transferred)
@@ -88,99 +90,79 @@ void qb::Bot::read_handler(const boost::system::error_code& error, std::size_t b
     {
         qb::log::err(error.message(), '|', error.category().name(), ':', error.value(),
                      "| Bytes Transferred:", bytes_transferred);
-        if (error != asio::error::eof && error != ssl::error::stream_truncated)
+        return;
+    }
+    assert(bytes_transferred != 0);
+
+    // Print diagnostics.
+    qb::log::point("[READ] Bytes Transferred:", bytes_transferred);
+
+    // Read the received data into a string.
+    const auto read_data = beast::buffers_to_string(buffer_.data());
+    // Clear the buffer as soon as possible.
+    buffer_.consume(buffer_.size());
+    // Now generate a proper JSON response object.
+    const auto resp = json::parse(beast::buffers_to_string(buffer_.data()));
+
+    if (qb::json_utils::val_eq(resp, "op", 10))
+    {
+        qb::log::point("Received Hello payload. Retrieving heartbeat interval.");
+        hb_interval_ms_ = resp["d"]["heartbeat_interval"].get<unsigned int>();
+        qb::log::value("heartbeat_interval", hb_interval_ms_);
+
+        // After receiving the Hello payload, we must identify with the remote server.
+        const auto identify_packet = qb::json_utils::get_identify_packet(qb::detail::get_bot_token());
+        qb::log::data("Identification payload", identify_packet.dump(2));
+
+        qb::log::point("Writing identification payload to websocket.");
+        if (outstanding_write_)
         {
-            qb::log::warn("Ending read loop due to above error.");
+            qb::log::err("Write in progress while attempting to identify with remote server.");
             return;
         }
+        outstanding_write_ = true;
+        (*ws_)->async_write(asio::buffer(identify_packet.dump()),
+                            std::bind(&qb::Bot::write_complete_handler, this,
+                                      std::placeholders::_1, std::placeholders::_2));
     }
-    const auto read_data = beast::buffers_to_string(buffer_.data());
-    qb::log::value("Bytes transferred", bytes_transferred);
-    if (bytes_transferred > 1)
+    else if (qb::json_utils::val_eq(resp, "op", 0))
     {
-        // Handle Hello packet
-
-        const auto resp = json::parse(beast::buffers_to_string(buffer_.data()));
-        // Buffer is cleared below
-        if (qb::json_utils::val_eq(resp, "op", 10))
-        {
-            qb::log::point("Received hello package. Bytes Transferred:", bytes_transferred);
-            qb::log::point("Retrieving heartbeat interval.");
-            hb_interval_ms_ = resp["d"]["heartbeat_interval"].get<unsigned int>();
-            qb::log::value("heartbeat_interval", hb_interval_ms_);
-            // Step 12 - Generate the identification packet. (Also Step 13, Step 14 - Adding token/properties)
-            const auto identify_packet = qb::json_utils::get_identify_packet(qb::detail::get_bot_token());
-            qb::log::data("Identification payload", identify_packet.dump(2));
-
-            qb::log::point("Writing identification payload to websocket.");
-            if (outstanding_write_)
-            {
-                qb::log::point("Okay... there's a write in progress. What?");
-                return;
-            }
-            outstanding_write_ = true;
-            (*ws_)->async_write(asio::buffer(identify_packet.dump()),
-                                std::bind(&qb::Bot::write_complete_handler, this,
-                                          std::placeholders::_1, std::placeholders::_2));
-        }
-        else if (qb::json_utils::val_eq(resp, "op", 0))
-        {
-            qb::log::point("Successfuly received OPCODE 0 payload..."); 
-        }
-        else
-        {
-            qb::log::point("Received some payload. OPCODE:", resp["op"]);
-        }
-
-        // qb::log::data("Data read from websocket", qb::json_utils::try_prettify(read_data));
-        // qb::log::data("RAW DATA", read_data);
+        qb::log::point("Successfuly received OPCODE 0 payload...");
     }
     else
     {
-        // What's going on..?
-        misc_counter_++;
-        if (misc_counter_ % 10 == 0 && misc_counter_ < 100)
-        {
-            qb::log::point("This point you know what it means. Bytes transferred:", bytes_transferred);
-            qb::log::value("Misc counter", misc_counter_);
-        }
+        qb::log::data("Payload read", resp.dump(2));
     }
-    buffer_.consume(buffer_.size());
+
+    // We must always recursively continue to read more data.
     (*ws_)->async_read(
         buffer_, std::bind(&qb::Bot::read_handler, this, std::placeholders::_1, std::placeholders::_2));
 }
 
 void qb::Bot::start()
 {
+    // Some basic initialization prior to starting any networking calls.
     qb::log::point("Creating timer for ping operations.");
     timer_.emplace(ioc_, boost::asio::chrono::milliseconds(hb_interval_ms_));
-    // Step 01 - Make API call to Discord /gateway/bot/ to get a WebSocket URL
-    // This is something we might need to do intermittently, so we call a function to do it.
-    auto socket_info = web::get_bot_socket(ioc_);
+
+    // Make API call to Discord /gateway/bot/ to get a WebSocket URL
+    auto socket_info             = web::get_bot_socket(ioc_);
+    const std::string socket_url = socket_info["url"];
     qb::log::data("Socket information", socket_info.dump(2));
 
-    // Step 05 - Get the socket URL from the JSON data and save it with explicit version/encoding
-    const std::string socket_url = socket_info["url"];
-    // This isn't particularly efficient but optimizing startup time doesn't seem like a priority
-
-    // Step 06 - Start running bot core.
-
-    // This requires a connection to the remote WebSocket server.
-    // We will use our abstractions in web.hpp to acquire this for us.
+    // Acquire a websocket connection to the URL.
     ws_.emplace(std::move(web::acquire_websocket(socket_url, ioc_)));
-    auto& ws = *ws_;
 
-    /** Step 08 - Receive OPCODE 10 packet. **/
-    qb::log::point("Reading the Hello payload into the buffer.");
-    ws->async_read(
+    // Start the asynchronous read loop.
+    (*ws_)->async_read(
         buffer_, std::bind(&qb::Bot::read_handler, this, std::placeholders::_1, std::placeholders::_2));
 
+    // Start the asynchronous write loop.
     ping_sender({});
+
+    // Begin allowing completion handlers to fire.
     ioc_.run();
 
-    // using namespace std::chrono_literals;
-    // std::this_thread::sleep_for(5s);
-
-    // For now, just disconnect again, as this is a work in progress.
+    // End bot execution.
     qb::log::point("Finishing bot execution...");
 }
