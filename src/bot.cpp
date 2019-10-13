@@ -27,10 +27,24 @@ qb::Bot::Bot(const Flag flag)
 
 void qb::Bot::ping_sender(const boost::system::error_code& error)
 {
+    // Check if we've already fired an async_write
+    if (outstanding_write_)
+    {
+        // Pings aren't that important, try again in a second
+        qb::log::point("Outstanding write, skipping ping for a second.");
+        boost::asio::steady_timer short_timer(
+            ioc_, std::chrono::steady_clock::now() + std::chrono::seconds(1));
+        short_timer.async_wait(std::bind(&qb::Bot::ping_sender, this, std::placeholders::_1));
+        return;
+    }
     // Send a ping
-    const static auto heartbeat_msg = json{}.dump();
-    ws_->async_write(asio::buffer(heartbeat_msg), [](const auto& ec, auto bytes_transferred) {});
-    boost::asio::steady_timer timer(ioc_, std::chrono::steady_clock::now() + std::chrono::seconds(60));
+    const static auto heartbeat_msg =
+        asio::buffer(json{{"op", 1}, {"s", nullptr}, {"d", {}}, {"t", nullptr}}.dump());
+    qb::log::point("Sending ping.");
+    ws_->async_write(heartbeat_msg, [](const auto& ec, auto bytes_transferred) {});
+    outstanding_write_ = true;
+    boost::asio::steady_timer timer(
+        ioc_, std::chrono::steady_clock::now() + std::chrono::milliseconds(hb_interval_ms_));
     timer.async_wait(std::bind(&qb::Bot::ping_sender, this, std::placeholders::_1));
 }
 
@@ -38,7 +52,7 @@ void qb::Bot::start()
 {
     // Step 01 - Make API call to Discord /gateway/bot/ to get a WebSocket URL
     // This is something we might need to do intermittently, so we call a function to do it.
-    auto socket_info = web::get_bot_socket();
+    auto socket_info = web::get_bot_socket(ioc_);
     qb::log::data("Socket information", socket_info.dump(2));
 
     // Step 05 - Get the socket URL from the JSON data and save it with explicit version/encoding

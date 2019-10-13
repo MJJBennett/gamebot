@@ -67,7 +67,7 @@ web::WSWrapper web::acquire_websocket(const std::string& psocket_url)
     return std::move(ws);
 }
 
-nlohmann::json web::get_bot_socket()
+nlohmann::json web::get_bot_socket(asio::io_context& ioc)
 {
     try
     {
@@ -76,9 +76,6 @@ nlohmann::json web::get_bot_socket()
         const auto port        = std::string(qb::constants::port);
         const auto target      = std::string(qb::constants::bot_gateway_target);
         const int version      = qb::constants::version;
-
-        // This IO context is a powerful thing, see CPPCon 2018 Falco talk
-        asio::io_context ioc;
 
         tcp::resolver resolver(ioc);
 
