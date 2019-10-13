@@ -7,6 +7,8 @@
 #include <boost/system/error_code.hpp>
 #include <boost/beast/core/flat_buffer.hpp>
 
+#define CAREFUL_NO_DDOS 1
+
 namespace qb
 {
 class Bot
@@ -37,6 +39,8 @@ private:
     // Check this before running an async write
     bool outstanding_write_{false};
     boost::beast::flat_buffer buffer_{};
+
+    unsigned long long pings_sent_{0};
 };
 } // namespace qb
 

@@ -37,12 +37,19 @@ void qb::Bot::ping_sender(const boost::system::error_code& error)
         short_timer.async_wait(std::bind(&qb::Bot::ping_sender, this, std::placeholders::_1));
         return;
     }
+#ifdef CAREFUL_NO_DDOS
+    if (pings_sent_ > 5) {
+        qb::log::warn("Let's not DDOS anyone! Stopping sending pings. Service will shut down in ~40-120s. :(");
+        return;
+    }
+#endif
     // Send a ping
     const static auto heartbeat_msg =
         asio::buffer(json{{"op", 1}, {"s", nullptr}, {"d", {}}, {"t", nullptr}}.dump());
     qb::log::point("Sending ping.");
     ws_->async_write(heartbeat_msg, std::bind(&qb::Bot::write_complete_handler, this,
                                               std::placeholders::_1, std::placeholders::_2));
+    pings_sent_ += 1;
     outstanding_write_ = true;
     boost::asio::steady_timer timer(
         ioc_, std::chrono::steady_clock::now() + std::chrono::milliseconds(hb_interval_ms_));
