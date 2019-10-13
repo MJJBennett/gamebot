@@ -4,8 +4,8 @@
 #include "web.hpp"
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/io_context.hpp>
-#include <boost/system/error_code.hpp>
 #include <boost/beast/core/flat_buffer.hpp>
+#include <boost/system/error_code.hpp>
 
 #define CAREFUL_NO_DDOS 1
 
@@ -39,6 +39,7 @@ private:
     // Check this before running an async write
     bool outstanding_write_{false};
     boost::beast::flat_buffer buffer_{};
+    std::optional<boost::asio::steady_timer> timer_{};
 
     unsigned long long pings_sent_{0};
 };

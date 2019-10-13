@@ -27,14 +27,18 @@ qb::Bot::Bot(const Flag flag)
 
 void qb::Bot::ping_sender(const boost::system::error_code& error)
 {
+    if (error)
+    {
+        qb::log::err(error.message());
+        return;
+    }
     // Check if we've already fired an async_write
     if (outstanding_write_)
     {
         // Pings aren't that important, try again in a second
         qb::log::point("Outstanding write, skipping ping for a second.");
-        boost::asio::steady_timer short_timer(
-            ioc_, std::chrono::steady_clock::now() + std::chrono::seconds(1));
-        short_timer.async_wait(std::bind(&qb::Bot::ping_sender, this, std::placeholders::_1));
+        timer_->expires_from_now(boost::asio::chrono::milliseconds(hb_interval_ms_));
+        timer_->async_wait(std::bind(&qb::Bot::ping_sender, this, std::placeholders::_1));
         return;
     }
 #ifdef CAREFUL_NO_DDOS
@@ -51,9 +55,8 @@ void qb::Bot::ping_sender(const boost::system::error_code& error)
                                               std::placeholders::_1, std::placeholders::_2));
     pings_sent_ += 1;
     outstanding_write_ = true;
-    boost::asio::steady_timer timer(
-        ioc_, std::chrono::steady_clock::now() + std::chrono::milliseconds(hb_interval_ms_));
-    timer.async_wait(std::bind(&qb::Bot::ping_sender, this, std::placeholders::_1));
+    timer_->expires_from_now(boost::asio::chrono::milliseconds(hb_interval_ms_));
+    timer_->async_wait(std::bind(&qb::Bot::ping_sender, this, std::placeholders::_1));
 }
 
 void qb::Bot::write_complete_handler(const boost::system::error_code& error, std::size_t bytes_transferred)
@@ -64,7 +67,7 @@ void qb::Bot::write_complete_handler(const boost::system::error_code& error, std
 
 void qb::Bot::read_handler(const boost::system::error_code& error, std::size_t bytes_transferred)
 {
-    qb::log::data("Data read from websocket", json::parse(beast::buffers_to_string(buffer_.data())));
+    qb::log::data("Data read from websocket", qb::json_utils::simple_prettify(beast::buffers_to_string(buffer_.data())));
     buffer_.consume(buffer_.size());
     ws_->async_read(buffer_, std::bind(&qb::Bot::read_handler, this, std::placeholders::_1,
                                               std::placeholders::_2));
@@ -139,6 +142,9 @@ void qb::Bot::start()
         ws_.disconnect();
         return;
     }
+    qb::log::point("Creating timer for ping operations.");
+    timer_.emplace(ioc_, boost::asio::chrono::milliseconds(hb_interval_ms_));
+
     qb::log::point("Successfully completed setup. Now beginning normal asynchronous operations.");
 
     ws_->async_read(buffer_, std::bind(&qb::Bot::read_handler, this, std::placeholders::_1,
