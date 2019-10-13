@@ -123,7 +123,7 @@ void qb::Bot::start()
     // The make_printable() function helps print a ConstBufferSequence
     const auto ready_resp = json::parse(beast::buffers_to_string(buffer.data()));
     qb::log::data("Ready payload", ready_resp.dump(2));
-    buffer.clear();
+    buffer.consume(buffer.size());
 
     qb::log::normal("Is it opcode 0?", (qb::json_utils::val_eq(ready_resp, "op", 0) ? "Yep!" : "Nope!!!"));
     if (!qb::json_utils::val_eq(ready_resp, "op", 0))
