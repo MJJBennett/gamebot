@@ -98,11 +98,9 @@ void qb::Bot::read_handler(const boost::system::error_code& error, std::size_t b
     qb::log::point("[READ] Bytes Transferred:", bytes_transferred);
 
     // Read the received data into a string.
-    const auto read_data = beast::buffers_to_string(buffer_.data());
+    const auto resp = json::parse(beast::buffers_to_string(buffer_.data()));
     // Clear the buffer as soon as possible.
     buffer_.consume(buffer_.size());
-    // Now generate a proper JSON response object.
-    const auto resp = json::parse(beast::buffers_to_string(buffer_.data()));
 
     if (qb::json_utils::val_eq(resp, "op", 10))
     {

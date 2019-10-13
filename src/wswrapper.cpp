@@ -8,7 +8,6 @@ namespace websocket = boost::beast::websocket;
 
 web::WSWrapper::~WSWrapper()
 {
-    qb::log::normal("Closing the websocket.");
     if (ws_ == nullptr)
     {
         // Note - this happens when ws_ is moved from (move constructor)
