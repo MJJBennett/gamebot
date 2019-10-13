@@ -2,13 +2,13 @@
 #define BOT_HPP
 
 #include "web.hpp"
-#include <boost/asio/io_context.hpp>
 #include <boost/asio/buffer.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/system/error_code.hpp>
+#include <boost/beast/core/flat_buffer.hpp>
 
 namespace qb
 {
-
 class Bot
 {
 public:
@@ -28,6 +28,7 @@ private:
 
     void ping_sender(const boost::system::error_code& error);
     void read_handler(const boost::system::error_code& error, std::size_t bytes_transferred);
+    void write_complete_handler(const boost::system::error_code& error, std::size_t bytes_transferred);
 
 private:
     unsigned int hb_interval_ms_{0};
@@ -35,6 +36,7 @@ private:
     boost::asio::io_context ioc_{};
     // Check this before running an async write
     bool outstanding_write_{false};
+    boost::beast::flat_buffer buffer_{};
 };
 } // namespace qb
 

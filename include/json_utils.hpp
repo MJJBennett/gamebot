@@ -16,6 +16,11 @@ bool val_eq(const json& jd, const std::string& key, const V& v)
     return false;
 }
 
+inline std::string simple_prettify(const std::string& data)
+{
+    return json::parse(data).dump(2);
+}
+
 inline json get_identify_packet(const std::string& token)
 {
     return json{{"op", 2},

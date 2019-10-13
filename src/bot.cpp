@@ -41,11 +41,26 @@ void qb::Bot::ping_sender(const boost::system::error_code& error)
     const static auto heartbeat_msg =
         asio::buffer(json{{"op", 1}, {"s", nullptr}, {"d", {}}, {"t", nullptr}}.dump());
     qb::log::point("Sending ping.");
-    ws_->async_write(heartbeat_msg, [](const auto& ec, auto bytes_transferred) {});
+    ws_->async_write(heartbeat_msg, std::bind(&qb::Bot::write_complete_handler, this,
+                                              std::placeholders::_1, std::placeholders::_2));
     outstanding_write_ = true;
     boost::asio::steady_timer timer(
         ioc_, std::chrono::steady_clock::now() + std::chrono::milliseconds(hb_interval_ms_));
     timer.async_wait(std::bind(&qb::Bot::ping_sender, this, std::placeholders::_1));
+}
+
+void qb::Bot::write_complete_handler(const boost::system::error_code& error, std::size_t bytes_transferred)
+{
+    // Our most recent write is now complete. That's great!
+    outstanding_write_ = false;
+}
+
+void qb::Bot::read_handler(const boost::system::error_code& error, std::size_t bytes_transferred)
+{
+    qb::log::data("Data read from websocket", json::parse(beast::buffers_to_string(buffer_.data())));
+    buffer_.consume(buffer_.size());
+    ws_->async_read(buffer_, std::bind(&qb::Bot::read_handler, this, std::placeholders::_1,
+                                              std::placeholders::_2));
 }
 
 void qb::Bot::start()
@@ -75,7 +90,7 @@ void qb::Bot::start()
     // The make_printable() function helps print a ConstBufferSequence
     const auto resp = json::parse(beast::buffers_to_string(buffer.data()));
     qb::log::data("Hello payload", resp.dump(2));
-    buffer.clear();
+    buffer.consume(buffer.size());
 
     /** Step 09 - Verify that the received OPCODE is equal to 10. **/
     qb::log::normal("Is it opcode 10?", (qb::json_utils::val_eq(resp, "op", 10) ? "Yep!" : "Nope!!!"));
@@ -117,10 +132,15 @@ void qb::Bot::start()
         ws.disconnect();
         return;
     }
+    qb::log::point("Successfully completed setup. Now beginning normal asynchronous operations.");
 
-    qb::log::point("Successfully did everything.");
-    using namespace std::chrono_literals;
-    std::this_thread::sleep_for(5s);
+    ws_->async_read(buffer_, std::bind(&qb::Bot::read_handler, this, std::placeholders::_1,
+                                              std::placeholders::_2));
+    ping_sender({});
+    ioc_.run();
+
+    // using namespace std::chrono_literals;
+    // std::this_thread::sleep_for(5s);
 
     // For now, just disconnect again, as this is a work in progress.
     qb::log::point("Finishing bot execution...");
