@@ -17,6 +17,7 @@ public:
     WSWrapper(std::unique_ptr<WebSocket> ws);
     ~WSWrapper();
     WSWrapper(WSWrapper&& wsw);
+    WSWrapper& operator=(WSWrapper&& wsw);
     WebSocket* operator->()
     {
         return ws_.get();

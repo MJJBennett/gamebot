@@ -33,6 +33,12 @@ web::WSWrapper::WSWrapper(web::WSWrapper&& wsw) : ws_{std::move(wsw.ws_)}
 {
 }
 
+web::WSWrapper& web::WSWrapper::operator=(web::WSWrapper&& wsw)
+{
+    ws_ = std::move(wsw.ws_);
+    return *this;
+}
+
 void web::WSWrapper::disconnect()
 {
     ws_.reset();

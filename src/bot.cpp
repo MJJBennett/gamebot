@@ -78,14 +78,14 @@ void qb::Bot::start()
 
     // This requires a connection to the remote WebSocket server.
     // We will use our abstractions in web.hpp to acquire this for us.
-    auto ws = web::acquire_websocket(socket_url);
+    ws_ = std::move(web::acquire_websocket(socket_url));
 
     // This buffer will hold the incoming message
     beast::flat_buffer buffer;
 
     /** Step 08 - Receive OPCODE 10 packet. **/
     qb::log::point("Reading the Hello payload into the buffer.");
-    ws->read(buffer);
+    ws_->read(buffer);
 
     // The make_printable() function helps print a ConstBufferSequence
     const auto resp = json::parse(beast::buffers_to_string(buffer.data()));
@@ -97,10 +97,10 @@ void qb::Bot::start()
     if (!qb::json_utils::val_eq(resp, "op", 10))
     {
         qb::log::warn("Ending bot execution early. @", __LINE__, __FILE__);
-        ws.disconnect();
+        ws_.disconnect();
         return;
     }
-    ws.validate(); // Print some validation information
+    ws_.validate(); // Print some validation information
 
     /** Step 10 - Retrieve heartbeat interval information from hello packet. **/
     qb::log::point("Retrieving heartbeat interval.");
@@ -114,11 +114,11 @@ void qb::Bot::start()
     qb::log::data("Identification payload", identify_packet.dump(2));
 
     qb::log::point("Writing identification payload to websocket.");
-    ws->write(asio::buffer(identify_packet.dump()));
+    ws_->write(asio::buffer(identify_packet.dump()));
 
     /** Step 15 - Receive Ready packet. **/
     qb::log::point("Reading Ready packet into buffer.");
-    ws->read(buffer);
+    ws_->read(buffer);
 
     // The make_printable() function helps print a ConstBufferSequence
     const auto ready_resp = json::parse(beast::buffers_to_string(buffer.data()));
@@ -129,7 +129,7 @@ void qb::Bot::start()
     if (!qb::json_utils::val_eq(ready_resp, "op", 0))
     {
         qb::log::warn("Ending bot execution early. @", __LINE__, __FILE__);
-        ws.disconnect();
+        ws_.disconnect();
         return;
     }
     qb::log::point("Successfully completed setup. Now beginning normal asynchronous operations.");
