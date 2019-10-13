@@ -13,11 +13,9 @@ using WebSocket = boost::beast::websocket::stream<boost::beast::ssl_stream<boost
 class WSWrapper
 {
 public:
-    WSWrapper();
-    WSWrapper(std::unique_ptr<WebSocket> ws);
+    WSWrapper(boost::asio::io_context& ioc);
     ~WSWrapper();
     WSWrapper(WSWrapper&& wsw);
-    WSWrapper& operator=(WSWrapper&& wsw);
     WebSocket* operator->()
     {
         return ws_.get();
@@ -29,8 +27,11 @@ public:
     }
     void disconnect();
 
+    boost::asio::ip::tcp::resolver resolver_;
 private:
     std::unique_ptr<WebSocket> ws_;
+    boost::asio::ssl::context ctx_;
+    boost::asio::io_context& ioc_;
 };
 } // namespace web
 

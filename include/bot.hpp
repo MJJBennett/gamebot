@@ -6,6 +6,7 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/beast/core/flat_buffer.hpp>
 #include <boost/system/error_code.hpp>
+#include <optional>
 
 #define CAREFUL_NO_DDOS 1
 
@@ -34,13 +35,16 @@ private:
 
 private:
     unsigned int hb_interval_ms_{0};
-    web::WSWrapper ws_{};
+    std::optional<web::WSWrapper> ws_;
     boost::asio::io_context ioc_{};
     // Check this before running an async write
     bool outstanding_write_{false};
-    boost::beast::flat_buffer buffer_{};
+    boost::beast::flat_buffer buffer_;
     std::optional<boost::asio::steady_timer> timer_{};
 
+    const static boost::asio::const_buffers_1 heartbeat_msg_;
+    
+    unsigned int misc_counter_{0};
     unsigned long long pings_sent_{0};
 };
 } // namespace qb

@@ -34,17 +34,11 @@ web::WSWrapper web::acquire_websocket(const std::string& psocket_url, asio::io_c
     const auto socket_url = psocket_url.substr(6);
     qb::log::normal("Okay, using", socket_url, "instead.");
 
-    // The SSL context is required, and holds certificates
-    ssl::context ctx{ssl::context::tlsv12_client};
-    ctx.set_options(asio::ssl::context::default_workarounds);
-    ctx.set_verify_mode(ssl::verify_peer);
-
     // These objects perform our I/O
-    tcp::resolver resolver{ioc};
-    web::WSWrapper ws{std::make_unique<web::WebSocket>(ioc, ctx)};
+    web::WSWrapper ws(ioc);
 
     qb::log::normal("Resolving websocket URL.");
-    auto const results = resolver.resolve(socket_url, port);
+    auto const results = ws.resolver_.resolve(socket_url, port);
 
     qb::log::normal("Connecting to the IP address using Asio.");
     asio::connect(ws->next_layer().next_layer(), results.begin(), results.end());

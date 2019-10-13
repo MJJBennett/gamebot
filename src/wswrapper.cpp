@@ -21,22 +21,16 @@ web::WSWrapper::~WSWrapper()
     qb::log::normal("Closed the websocket.");
 }
 
-web::WSWrapper::WSWrapper(std::unique_ptr<WebSocket> ws) : ws_(std::move(ws))
+web::WSWrapper::WSWrapper(boost::asio::io_context& ioc) : ctx_(boost::asio::ssl::context::tlsv12_client), ioc_(ioc), resolver_(ioc)
 {
-}
+    qb::log::point("Constructing websocket wrapper.");
+    ctx_.set_options(boost::asio::ssl::context::default_workarounds);
+    ctx_.set_verify_mode(boost::asio::ssl::verify_peer);
+    qb::log::point("Constructing inner websocket.");
+    ws_ = std::make_unique<web::WebSocket>(ioc_, ctx_);}
 
-web::WSWrapper::WSWrapper()
+web::WSWrapper::WSWrapper(web::WSWrapper&& wsw) : ws_{std::move(wsw.ws_)}, ctx_{std::move(wsw.ctx_)}, ioc_(wsw.ioc_), resolver_{std::move(wsw.resolver_)}
 {
-}
-
-web::WSWrapper::WSWrapper(web::WSWrapper&& wsw) : ws_{std::move(wsw.ws_)}
-{
-}
-
-web::WSWrapper& web::WSWrapper::operator=(web::WSWrapper&& wsw)
-{
-    ws_ = std::move(wsw.ws_);
-    return *this;
 }
 
 void web::WSWrapper::disconnect()
