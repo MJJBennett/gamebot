@@ -25,7 +25,7 @@ using tcp           = asio::ip::tcp;
 using json          = nlohmann::json;
 
 
-web::WSWrapper web::acquire_websocket(const std::string& psocket_url)
+web::WSWrapper web::acquire_websocket(const std::string& psocket_url, asio::io_context& ioc)
 {
     /** Step 07 - Connect to the socket using websockets and SSL. **/
     const auto port = std::string(qb::constants::port);
@@ -33,9 +33,6 @@ web::WSWrapper web::acquire_websocket(const std::string& psocket_url)
     qb::log::normal("Fixing the URL to remove wss://...");
     const auto socket_url = psocket_url.substr(6);
     qb::log::normal("Okay, using", socket_url, "instead.");
-
-    // The io_context is required for all I/O
-    asio::io_context ioc;
 
     // The SSL context is required, and holds certificates
     ssl::context ctx{ssl::context::tlsv12_client};

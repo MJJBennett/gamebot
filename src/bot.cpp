@@ -78,7 +78,7 @@ void qb::Bot::start()
 
     // This requires a connection to the remote WebSocket server.
     // We will use our abstractions in web.hpp to acquire this for us.
-    ws_ = std::move(web::acquire_websocket(socket_url));
+    ws_ = std::move(web::acquire_websocket(socket_url, ioc_));
 
     // This buffer will hold the incoming message
     beast::flat_buffer buffer;
