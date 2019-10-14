@@ -36,6 +36,8 @@ private:
     void dispatch_ping_in(unsigned int ms);
     // Helper method: Writes a string to the WebSocket connection. Sets outstanding_write.
     void dispatch_write(const std::string& str);
+    // Helper method: Starts an async_read on the WebSocket connection.
+    void dispatch_read();
 
 private:
     std::optional<web::WSWrapper> ws_;                 // WebSocket connection

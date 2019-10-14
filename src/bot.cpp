@@ -35,6 +35,12 @@ void qb::Bot::dispatch_write(const std::string& str)
     outstanding_write_ = true;
 }
 
+void qb::Bot::dispatch_read()
+{
+    (*ws_)->async_read(
+        buffer_, std::bind(&qb::Bot::read_handler, this, std::placeholders::_1, std::placeholders::_2));
+}
+
 void qb::Bot::ping_sender(const boost::system::error_code& error)
 {
     /** This function continuously sends 'heartbeats'.
@@ -136,8 +142,8 @@ void qb::Bot::read_handler(const boost::system::error_code& error, std::size_t b
 
     // We must always recursively continue to read more data.
     qb::log::point("Read started...");
-    (*ws_)->async_read(
-        buffer_, std::bind(&qb::Bot::read_handler, this, std::placeholders::_1, std::placeholders::_2));
+
+    dispatch_read();
 }
 
 void qb::Bot::start()
@@ -155,8 +161,7 @@ void qb::Bot::start()
     ws_.emplace(std::move(web::acquire_websocket(socket_url, ioc_)));
 
     // Start the asynchronous read loop.
-    (*ws_)->async_read(
-        buffer_, std::bind(&qb::Bot::read_handler, this, std::placeholders::_1, std::placeholders::_2));
+    dispatch_read();
 
     // Start the asynchronous write loop.
     ping_sender({});
