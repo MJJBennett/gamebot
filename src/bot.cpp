@@ -11,17 +11,13 @@
 #include <thread>
 
 namespace beast     = boost::beast;
-namespace http      = beast::http;
 namespace asio      = boost::asio;
-namespace ssl       = asio::ssl;
 namespace websocket = beast::websocket;
-using tcp           = asio::ip::tcp;
 using json          = nlohmann::json;
 
 qb::Bot::Bot(const Flag flag)
 {
-    using namespace qb;
-    if (bitwise_and<int>(flag, Flag::LazyInit)) return;
+    if (qb::bitwise_and<int>(flag, Flag::LazyInit)) return;
     start();
 }
 
@@ -31,8 +27,19 @@ void qb::Bot::dispatch_ping_in(unsigned int ms)
     timer_->async_wait(std::bind(&qb::Bot::ping_sender, this, std::placeholders::_1));
 }
 
+void qb::Bot::dispatch_write(const std::string& str)
+{
+    assert(!outstanding_write_);
+    (*ws_)->async_write(asio::buffer(str), std::bind(&qb::Bot::write_complete_handler, this,
+                                                     std::placeholders::_1, std::placeholders::_2));
+    outstanding_write_ = true;
+}
+
 void qb::Bot::ping_sender(const boost::system::error_code& error)
 {
+    /** This function continuously sends 'heartbeats'.
+        Essentially, it will intermittently send a basic payload where
+        the only important piece of data is the opcode 1. **/
     if (error)
     {
         qb::log::err(error.message());
@@ -40,7 +47,8 @@ void qb::Bot::ping_sender(const boost::system::error_code& error)
     }
     if (hb_interval_ms_ < 11)
     {
-        qb::log::warn("Pausing ping sending due to short interval:", hb_interval_ms_);
+        qb::log::warn("Pausing ping sending due to short interval of ", hb_interval_ms_,
+                      " milliseconds.");
         dispatch_ping_in(10000);
         return;
     }
@@ -49,56 +57,50 @@ void qb::Bot::ping_sender(const boost::system::error_code& error)
     {
         // Pings aren't that important, try again in a second
         qb::log::point("Outstanding write, skipping ping for a second.");
-        dispatch_ping_in(10000);
+        dispatch_ping_in(1000);
         return;
     }
     if (acks_received_ < pings_sent_)
     {
-        qb::log::warn("Received", acks_received_, "acks and sent", pings_sent_,
-                      "pings. Waiting...");
+        qb::log::warn("Got ", acks_received_, " acks & sent ", pings_sent_, " pings. Waiting...");
         dispatch_ping_in(2000);
         return;
     }
+
     // Send a ping
     qb::log::point("Sending ping.");
-    (*ws_)->async_write(
-        asio::buffer(heartbeat_msg_),
-        std::bind(&qb::Bot::write_complete_handler, this, std::placeholders::_1, std::placeholders::_2));
+    dispatch_write(heartbeat_msg_);
     pings_sent_ += 1;
-    outstanding_write_ = true;
     dispatch_ping_in(hb_interval_ms_);
 }
 
 void qb::Bot::write_complete_handler(const boost::system::error_code& error, std::size_t bytes_transferred)
 {
     // Our most recent write is now complete. That's great!
-    qb::log::point("Completed write,", bytes_transferred, "bytes transferred.");
+    qb::log::point("Completed a write with", bytes_transferred, "bytes transferred.");
     if (error)
     {
         qb::log::err(error.message(), '|', error.category().name(), ':', error.value());
     }
-    outstanding_write_ = false;
+    outstanding_write_ = false; // We can write again
 }
 
 void qb::Bot::read_handler(const boost::system::error_code& error, std::size_t bytes_transferred)
 {
-    qb::log::point("Read ended...");
+    qb::log::point("Parsing received data. Bytes transferred: ", bytes_transferred);
     if (error)
     {
-        qb::log::err(error.message(), '|', error.category().name(), ':', error.value(),
-                     "| Bytes Transferred:", bytes_transferred);
+        qb::log::err(error.message(), " (", error.category().name(), ':', error.value(), ')');
         return;
     }
     assert(bytes_transferred != 0);
-
-    // Print diagnostics.
-    qb::log::point("[READ] Bytes Transferred:", bytes_transferred);
 
     // Read the received data into a string.
     const auto resp = json::parse(beast::buffers_to_string(buffer_.data()));
     // Clear the buffer as soon as possible.
     buffer_.consume(buffer_.size());
 
+    // TODO - Each opcode should probably be handled in its own function.
     if (qb::json_utils::val_eq(resp, "op", 10))
     {
         qb::log::point("Received Hello payload. Retrieving heartbeat interval.");

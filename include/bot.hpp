@@ -8,8 +8,6 @@
 #include <boost/system/error_code.hpp>
 #include <optional>
 
-#define CAREFUL_NO_DDOS 1
-
 namespace qb
 {
 class Bot
@@ -24,31 +22,36 @@ public:
 
 public:
     explicit Bot(Flag = Flag::None);
-    void start();
+    void start(); // Runs the bot
 
 private:
-    void async_write(const boost::asio::mutable_buffer& to_write);
-
+    // Asynchronous recursive method, continously sends heartbeats across the WebSocket connection.
     void ping_sender(const boost::system::error_code& error);
+    // Asynchronous recursive method, parses most recent read data then starts another async_read.
     void read_handler(const boost::system::error_code& error, std::size_t bytes_transferred);
+    // Called after any async_write completes.
     void write_complete_handler(const boost::system::error_code& error, std::size_t bytes_transferred);
 
+    // Helper method: Sends a ping `ms` milliseconds after being called, asynchronously.
     void dispatch_ping_in(unsigned int ms);
+    // Helper method: Writes a string to the WebSocket connection. Sets outstanding_write.
+    void dispatch_write(const std::string& str);
 
 private:
-    unsigned int hb_interval_ms_{0};
-    std::optional<web::WSWrapper> ws_;
-    boost::asio::io_context ioc_{};
-    // Check this before running an async write
-    bool outstanding_write_{false};
-    boost::beast::flat_buffer buffer_;
-    std::optional<boost::asio::steady_timer> timer_{};
+    std::optional<web::WSWrapper> ws_;                 // WebSocket connection
+    boost::asio::io_context ioc_{};                    // IO Context handler
+    boost::beast::flat_buffer buffer_;                 // Persistent read buffer
+    std::optional<boost::asio::steady_timer> timer_{}; // Persistent write timer
 
-    const std::string heartbeat_msg_{nlohmann::json{{"op", 1}, {"s", nullptr}, {"d", {}}, {"t", nullptr}}.dump()};
-    
-    unsigned int misc_counter_{0};
-    unsigned long long pings_sent_{0};
-    unsigned long long acks_received_{0};
+    unsigned int hb_interval_ms_{0};      // Interval between heartbeats.
+    bool outstanding_write_{false};       // True if an async_write is currently in progress.
+    unsigned long long pings_sent_{0};    // Number of heartbeats that have been sent.
+    unsigned long long acks_received_{0}; // Number of heartbeat ACKs that have been received.
+
+private:
+    // Heartbeat data (opcode 1)
+    const std::string heartbeat_msg_{
+        nlohmann::json{{"op", 1}, {"s", nullptr}, {"d", {}}, {"t", nullptr}}.dump()};
 };
 } // namespace qb
 
