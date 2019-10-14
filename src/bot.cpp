@@ -13,6 +13,7 @@
 namespace beast     = boost::beast;
 namespace asio      = boost::asio;
 namespace websocket = beast::websocket;
+namespace j         = qb::json_utils;
 using json          = nlohmann::json;
 
 qb::Bot::Bot(const Flag flag)
@@ -20,6 +21,42 @@ qb::Bot::Bot(const Flag flag)
     if (qb::bitwise_and<int>(flag, Flag::LazyInit)) return;
     start();
 }
+
+/*****
+ *
+ * Main bot logic - Handlers for events & major opcodes.
+ *
+ *****/
+
+void qb::Bot::handle_hello(const json& payload)
+{
+    qb::log::point("Received Hello payload. Retrieving heartbeat interval.");
+    hb_interval_ms_ = payload["d"]["heartbeat_interval"].get<unsigned int>();
+    qb::log::value("heartbeat_interval", hb_interval_ms_);
+
+    // After receiving the Hello payload, we must identify with the remote server.
+    const auto identify_packet = j::get_identify_packet(qb::detail::get_bot_token());
+    qb::log::data("Identification payload", identify_packet.dump(2));
+
+    qb::log::point("Writing identification payload to websocket.");
+    if (outstanding_write_)
+    {
+        qb::log::err("Write in progress while attempting to identify with remote server.");
+        return;
+    }
+    outstanding_write_ = true;
+    dispatch_write(identify_packet.dump());
+}
+
+void qb::Bot::handle_event(const json& payload)
+{
+}
+
+/*****
+ *
+ * Core bot code - Read and write messages asynchronously.
+ *
+ *****/
 
 void qb::Bot::dispatch_ping_in(unsigned int ms)
 {
@@ -30,6 +67,10 @@ void qb::Bot::dispatch_ping_in(unsigned int ms)
 void qb::Bot::dispatch_write(const std::string& str)
 {
     assert(!outstanding_write_);
+    if (write_outgoing_)
+    {
+        qb::log::data("Outgoing message string", str);
+    }
     (*ws_)->async_write(asio::buffer(str), std::bind(&qb::Bot::write_complete_handler, this,
                                                      std::placeholders::_1, std::placeholders::_2));
     outstanding_write_ = true;
@@ -106,43 +147,35 @@ void qb::Bot::read_handler(const boost::system::error_code& error, std::size_t b
     // Clear the buffer as soon as possible.
     buffer_.consume(buffer_.size());
 
+    if (write_incoming_)
+    {
+        qb::log::data("Read incoming data", resp.dump(2));
+    }
+
     // TODO - Each opcode should probably be handled in its own function.
-    if (qb::json_utils::val_eq(resp, "op", 10))
+    // Handle each opcode separately
+    switch (j::def(resp, "op", -1))
     {
-        qb::log::point("Received Hello payload. Retrieving heartbeat interval.");
-        hb_interval_ms_ = resp["d"]["heartbeat_interval"].get<unsigned int>();
-        qb::log::value("heartbeat_interval", hb_interval_ms_);
-
-        // After receiving the Hello payload, we must identify with the remote server.
-        const auto identify_packet = qb::json_utils::get_identify_packet(qb::detail::get_bot_token());
-        qb::log::data("Identification payload", identify_packet.dump(2));
-
-        qb::log::point("Writing identification payload to websocket.");
-        if (outstanding_write_)
-        {
-            qb::log::err("Write in progress while attempting to identify with remote server.");
-            return;
-        }
-        outstanding_write_ = true;
-        dispatch_write(identify_packet.dump());
-    }
-    else if (qb::json_utils::val_eq(resp, "op", 0))
-    {
-        qb::log::point("Successfuly received OPCODE 0 payload...");
-    }
-    else if (qb::json_utils::val_eq(resp, "op", 11))
-    {
+    case 10:
+        handle_hello(resp);
+        break;
+    case 0:
+        handle_event(resp);
+    case 11:
+        // Handle ACK here because it's easy
         qb::log::point("Received ACK.");
         acks_received_ += 1;
+        break;
+    case -1:
+        qb::log::err("Could not find opcode in response: ", resp.dump());
+        break;
+    default:
+        qb::log::warn("No handler implemented for data: ", resp.dump());
+        break;
     }
-    else
-    {
-        qb::log::data("Payload read", resp.dump(2));
-    }
-
+    //
     // We must always recursively continue to read more data.
-    qb::log::point("Read started...");
-
+    qb::log::point("Dispatching new read.");
     dispatch_read();
 }
 

@@ -40,6 +40,11 @@ private:
     void dispatch_read();
 
 private:
+    /** opcode and event handlers **/
+    void handle_hello(const nlohmann::json& payload);
+    void handle_event(const nlohmann::json& payload);
+
+private:
     std::optional<web::WSWrapper> ws_;                 // WebSocket connection
     boost::asio::io_context ioc_{};                    // IO Context handler
     boost::beast::flat_buffer buffer_;                 // Persistent read buffer
@@ -49,6 +54,9 @@ private:
     bool outstanding_write_{false};       // True if an async_write is currently in progress.
     unsigned long long pings_sent_{0};    // Number of heartbeats that have been sent.
     unsigned long long acks_received_{0}; // Number of heartbeat ACKs that have been received.
+
+    bool write_incoming_{false};
+    bool write_outgoing_{false};
 
 private:
     // Heartbeat data (opcode 1)

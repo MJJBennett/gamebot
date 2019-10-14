@@ -16,6 +16,16 @@ bool val_eq(const json& jd, const std::string& key, const V& v)
     return false;
 }
 
+template <typename D>
+D def(const json& jd, const std::string& key, const D& d)
+{
+    if (const auto val_it = jd.find(key); val_it != jd.end())
+    {
+        return (*val_it).get<D>();
+    }
+    return d;
+}
+
 inline std::string try_prettify(const std::string& data)
 {
     try
