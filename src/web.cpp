@@ -24,7 +24,6 @@ namespace websocket = beast::websocket;
 using tcp           = asio::ip::tcp;
 using json          = nlohmann::json;
 
-
 web::WSWrapper web::acquire_websocket(const std::string& psocket_url, asio::io_context& ioc)
 {
     /** Step 07 - Connect to the socket using websockets and SSL. **/
@@ -56,6 +55,28 @@ web::WSWrapper web::acquire_websocket(const std::string& psocket_url, asio::io_c
     ws->handshake(socket_url, std::string(qb::constants::websocket_target));
 
     return std::move(ws);
+}
+
+const std::string& web::endpoint_str(Endpoint ep)
+{
+    using EP = web::Endpoint;
+    switch (ep)
+    {
+    case EP::channels:
+        break;
+    default:
+        break;
+    }
+}
+
+[[nodiscard]] nlohmann::json web::get(Endpoint ep, const std::string& ext)
+{
+    return {};
+}
+
+nlohmann::json web::post(Endpoint ep, const std::string& ext, const std::string& body)
+{
+    return {};
 }
 
 nlohmann::json web::get_bot_socket(asio::io_context& ioc)

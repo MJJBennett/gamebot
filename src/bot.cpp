@@ -39,17 +39,22 @@ void qb::Bot::handle_hello(const json& payload)
     qb::log::data("Identification payload", identify_packet.dump(2));
 
     qb::log::point("Writing identification payload to websocket.");
-    if (outstanding_write_)
-    {
-        qb::log::err("Write in progress while attempting to identify with remote server.");
-        return;
-    }
-    outstanding_write_ = true;
     dispatch_write(identify_packet.dump());
 }
 
 void qb::Bot::handle_event(const json& payload)
 {
+    const auto et = j::def(payload, "t", std::string{"ERR"});
+    if (et == "MESSAGE_CREATE")
+    {
+        qb::log::point("A message was created.");
+        // Print it for debug for now
+        qb::log::data("Message", payload.dump(2));
+    }
+    else if (et == "READY")
+    {
+        qb::log::point("A ready payload was sent.");
+    }
 }
 
 /*****
@@ -60,6 +65,7 @@ void qb::Bot::handle_event(const json& payload)
 
 void qb::Bot::dispatch_ping_in(unsigned int ms)
 {
+    if (!ws_) return;
     timer_->expires_from_now(boost::asio::chrono::milliseconds(ms));
     timer_->async_wait(std::bind(&qb::Bot::ping_sender, this, std::placeholders::_1));
 }
@@ -71,6 +77,11 @@ void qb::Bot::dispatch_write(const std::string& str)
     {
         qb::log::data("Outgoing message string", str);
     }
+    if (!ws_)
+    {
+        qb::log::point("Not dispatching write due to shutdown.");
+        return;
+    }
     (*ws_)->async_write(asio::buffer(str), std::bind(&qb::Bot::write_complete_handler, this,
                                                      std::placeholders::_1, std::placeholders::_2));
     outstanding_write_ = true;
@@ -78,6 +89,12 @@ void qb::Bot::dispatch_write(const std::string& str)
 
 void qb::Bot::dispatch_read()
 {
+    // If the websocket is closed, we're shutting down.
+    if (!ws_)
+    {
+        qb::log::point("Not dispatching read due to shutdown.");
+        return;
+    }
     (*ws_)->async_read(
         buffer_, std::bind(&qb::Bot::read_handler, this, std::placeholders::_1, std::placeholders::_2));
 }
@@ -173,7 +190,7 @@ void qb::Bot::read_handler(const boost::system::error_code& error, std::size_t b
         qb::log::warn("No handler implemented for data: ", resp.dump());
         break;
     }
-    //
+
     // We must always recursively continue to read more data.
     qb::log::point("Dispatching new read.");
     dispatch_read();
@@ -204,4 +221,22 @@ void qb::Bot::start()
 
     // End bot execution.
     qb::log::point("Finishing bot execution...");
+}
+
+void qb::Bot::shutdown()
+{
+    qb::log::point("Beginning shutdown.");
+    // Close the websocket.
+    try
+    {
+        ws_->disconnect();
+    }
+    catch (const std::exception& e)
+    {
+        qb::log::warn("Error while attempting to disconnect websocket: ", e.what());
+    }
+    ws_.reset();
+    // Stop the timer.
+    timer_->cancel();
+    qb::log::point("Shutdown completed.");
 }

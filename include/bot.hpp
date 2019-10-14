@@ -23,6 +23,7 @@ public:
 public:
     explicit Bot(Flag = Flag::None);
     void start(); // Runs the bot
+    void shutdown();
 
 private:
     // Asynchronous recursive method, continously sends heartbeats across the WebSocket connection.
