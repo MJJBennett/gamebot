@@ -118,9 +118,7 @@ void qb::Bot::read_handler(const boost::system::error_code& error, std::size_t b
             return;
         }
         outstanding_write_ = true;
-        (*ws_)->async_write(asio::buffer(identify_packet.dump()),
-                            std::bind(&qb::Bot::write_complete_handler, this,
-                                      std::placeholders::_1, std::placeholders::_2));
+        dispatch_write(identify_packet.dump());
     }
     else if (qb::json_utils::val_eq(resp, "op", 0))
     {
