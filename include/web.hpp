@@ -19,6 +19,8 @@ nlohmann::json get_bot_socket(boost::asio::io_context& ioc);
 [[nodiscard]] nlohmann::json get(Endpoint, const std::string& ext);
 nlohmann::json post(Endpoint, const std::string& ext, const std::string& body);
 
+const std::string& endpoint_str(Endpoint);
+
 } // namespace web
 
 #endif // GAMEBOT_WEB_HPP

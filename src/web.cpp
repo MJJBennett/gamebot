@@ -1,5 +1,6 @@
 #include "web.hpp"
 #include "constants.hpp"
+#include "endpoints.hpp"
 #include "debug.hpp"
 #include "json_utils.hpp"
 #include "utils.hpp"
@@ -63,7 +64,7 @@ const std::string& web::endpoint_str(Endpoint ep)
     switch (ep)
     {
     case EP::channels:
-        break;
+        return qb::endpoints::channel;
     default:
         break;
     }
