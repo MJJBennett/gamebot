@@ -1,0 +1,44 @@
+Possible reference materials for Boost::Beast & Boost::Asio.
+
+Quite nice StackOverflow posts to read through on Asio.
+https://stackoverflow.com/questions/34023271/using-boostasio-socket-async-and-sync-operations-together
+https://stackoverflow.com/questions/15568100/confused-when-boostasioio-service-run-method-blocks-unblocks/15568301#15568301
+
+Miscellaneous StackOverflow posts.
+https://stackoverflow.com/questions/55530669/how-does-beast-async-read-work-is-there-an-option-for-it
+
+High quality documentation for Asio/Beast.
+https://www.boost.org/doc/libs/1_71_0/doc/html/boost_asio/overview/core/strands.html
+https://www.boost.org/doc/libs/1_71_0/doc/html/boost_asio/reference/asynchronous_operations.html
+
+Miscellaneous Boost documentation. Why? Eh.
+https://www.boost.org/doc/libs/develop/libs/beast/doc/html/beast/ref/boost__beast__basic_flat_buffer.html
+https://www.boost.org/doc/libs/1_71_0/doc/html/boost_asio/reference/steady_timer.html
+
+Miscellaneous Beast examples.
+https://www.boost.org/doc/libs/develop/libs/beast/example/websocket/client/async-ssl/websocket_client_async_ssl.cpp
+https://github.com/boostorg/beast/blob/develop/example/websocket/client/sync-ssl/websocket_client_sync_ssl.cpp
+https://github.com/boostorg/beast/blob/develop/example/websocket/client/async-ssl-system-executor/websocket_client_async_ssl_system_executor.cpp
+https://www.boost.org/doc/libs/1_71_0/libs/beast/example/advanced/server/advanced_server.cpp
+https://www.boost.org/doc/libs/1_71_0/libs/beast/example/doc/http_examples.hpp
+
+Some miscellaneous issues that didn't end up being relevant to the issue at hand but still had some interesting content.
+https://github.com/boostorg/beast/issues/38
+https://github.com/boostorg/beast/issues/334
+https://github.com/boostorg/beast/issues/807
+https://github.com/boostorg/beast/issues/936
+https://github.com/boostorg/beast/issues/1092
+https://github.com/boostorg/beast/issues/1429
+https://github.com/boostorg/beast/issues/1148
+
+And, of course, the Beast 2018 CPPCon talk: https://www.youtube.com/watch?v=7FQwAjELMek
+
+Relevant Discord API documentation:
+
+ - OAuth? https://discordapp.com/developers/docs/topics/oauth2#bot-vs-user-accounts
+
+
+Some notes that are, you guessed it, miscellaneous:
+
+ - Asio buffers can be just handles and not data themselves, so the data they point to can't be allowed to go out of scope.
+ - ZLib compression might be useful. https://stackoverflow.com/questions/5322860/how-to-detect-quickly-if-a-string-is-zlib-compressed
