@@ -44,10 +44,11 @@ private:
     boost::beast::flat_buffer buffer_;
     std::optional<boost::asio::steady_timer> timer_{};
 
-    const static boost::asio::const_buffers_1 heartbeat_msg_;
+    const std::string heartbeat_msg_{nlohmann::json{{"op", 1}, {"s", nullptr}, {"d", {}}, {"t", nullptr}}.dump()};
     
     unsigned int misc_counter_{0};
     unsigned long long pings_sent_{0};
+    unsigned long long acks_received_{0};
 };
 } // namespace qb
 
