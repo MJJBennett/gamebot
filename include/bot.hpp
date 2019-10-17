@@ -2,8 +2,6 @@
 #define BOT_HPP
 
 #include "web.hpp"
-#include <boost/asio/buffer.hpp>
-#include <boost/asio/io_context.hpp>
 #include <boost/beast/core/flat_buffer.hpp>
 #include <boost/system/error_code.hpp>
 #include <optional>
@@ -22,8 +20,8 @@ public:
 
 public:
     explicit Bot(Flag = Flag::None);
-    void start(); // Runs the bot
-    void shutdown();
+    void start();    // Runs the bot
+    void shutdown(); // Stops all asynchronous operations.
 
 private:
     // Asynchronous recursive method, continously sends heartbeats across the WebSocket connection.
@@ -45,28 +43,29 @@ private:
     void handle_hello(const nlohmann::json& payload);
     void handle_event(const nlohmann::json& payload);
 
-    // Simple message sender
+    // Sends a message in a Discord channel.
     void send(std::string msg, std::string channel);
 
 private:
     std::optional<web::WSWrapper> ws_;                 // WebSocket connection
     boost::beast::flat_buffer buffer_;                 // Persistent read buffer
     std::optional<boost::asio::steady_timer> timer_{}; // Persistent write timer
-    web::context* web_ctx_{nullptr};                   // Our own web context
+    web::context* web_ctx_{nullptr};                   // Provides HTTP operations
 
     unsigned int hb_interval_ms_{0};      // Interval between heartbeats.
     bool outstanding_write_{false};       // True if an async_write is currently in progress.
     unsigned long long pings_sent_{0};    // Number of heartbeats that have been sent.
     unsigned long long acks_received_{0}; // Number of heartbeat ACKs that have been received.
 
-    bool write_incoming_{false};
-    bool write_outgoing_{false};
+    bool write_incoming_{false}; // Debug - Fully print incoming WebSocket data.
+    bool write_outgoing_{false}; // Debug - Fully print outgoing WebSocket data.
 
 private:
-    // Heartbeat data (opcode 1)
+    // Heartbeat data (opcode 1). Sent across WebSocket connection at regular intervals.
     const std::string heartbeat_msg_{
         nlohmann::json{{"op", 1}, {"s", nullptr}, {"d", {}}, {"t", nullptr}}.dump()};
 };
+
 } // namespace qb
 
 #endif // BOT_HPP
