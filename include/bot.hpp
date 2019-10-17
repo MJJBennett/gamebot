@@ -47,7 +47,7 @@ private:
 
 private:
     std::optional<web::WSWrapper> ws_;                 // WebSocket connection
-    boost::asio::io_context ioc_{};                    // IO Context handler
+    std::unique_ptr<boost::asio::io_context> ioc_{};   // IO Context handler
     boost::beast::flat_buffer buffer_;                 // Persistent read buffer
     std::optional<boost::asio::steady_timer> timer_{}; // Persistent write timer
 

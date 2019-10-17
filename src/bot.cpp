@@ -1,6 +1,7 @@
 #include "bot.hpp"
 #include "debug.hpp"
 #include "json_utils.hpp"
+#include "parse.hpp"
 #include "utils.hpp"
 #include "web.hpp"
 #include <boost/asio/steady_timer.hpp>
@@ -50,6 +51,11 @@ void qb::Bot::handle_event(const json& payload)
         qb::log::point("A message was created.");
         // Print it for debug for now
         qb::log::data("Message", payload.dump(2));
+
+        // New Message!
+        const auto cmd = qb::parse::remove_non_cmd(payload["d"]["content"]);
+        qb::log::point("Attempting to parse command: ", cmd);
+        if (cmd == "stop") shutdown();
     }
     else if (et == "READY")
     {
@@ -178,6 +184,7 @@ void qb::Bot::read_handler(const boost::system::error_code& error, std::size_t b
         break;
     case 0:
         handle_event(resp);
+        break;
     case 11:
         // Handle ACK here because it's easy
         qb::log::point("Received ACK.");
@@ -199,16 +206,20 @@ void qb::Bot::read_handler(const boost::system::error_code& error, std::size_t b
 void qb::Bot::start()
 {
     // Some basic initialization prior to starting any networking calls.
+    qb::log::point("Creating a web context.");
+    web::context web_context;
+    web_context.initialize();
+
     qb::log::point("Creating timer for ping operations.");
-    timer_.emplace(ioc_, boost::asio::chrono::milliseconds(hb_interval_ms_));
+    timer_.emplace(*web_context.ioc_ptr(), boost::asio::chrono::milliseconds(hb_interval_ms_));
 
     // Make API call to Discord /gateway/bot/ to get a WebSocket URL
-    auto socket_info             = web::get_bot_socket(ioc_);
+    auto socket_info             = web_context.get(web::Endpoint::gateway_bot);
     const std::string socket_url = socket_info["url"];
     qb::log::data("Socket information", socket_info.dump(2));
 
     // Acquire a websocket connection to the URL.
-    ws_.emplace(std::move(web::acquire_websocket(socket_url, ioc_)));
+    ws_.emplace(std::move(web_context.acquire_websocket(socket_url)));
 
     // Start the asynchronous read loop.
     dispatch_read();
@@ -217,7 +228,7 @@ void qb::Bot::start()
     ping_sender({});
 
     // Begin allowing completion handlers to fire.
-    ioc_.run();
+    web_context.run();
 
     // End bot execution.
     qb::log::point("Finishing bot execution...");
@@ -226,6 +237,8 @@ void qb::Bot::start()
 void qb::Bot::shutdown()
 {
     qb::log::point("Beginning shutdown.");
+    // Stop the timer.
+    timer_->cancel();
     // Close the websocket.
     try
     {
@@ -236,7 +249,5 @@ void qb::Bot::shutdown()
         qb::log::warn("Error while attempting to disconnect websocket: ", e.what());
     }
     ws_.reset();
-    // Stop the timer.
-    timer_->cancel();
     qb::log::point("Shutdown completed.");
 }
