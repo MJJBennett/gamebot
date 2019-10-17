@@ -143,14 +143,16 @@ const std::string& web::endpoint_str(Endpoint ep)
 nlohmann::json web::context::post(Endpoint ep, const std::string& body)
 {
     qb::log::point("Creating an HTTP POST request.");
-    // Set up an HTTP GET request message
+    // Set up an HTTP POST request message
     http::request<http::string_body> req{http::verb::post, endpoint_str(ep), qb::http_version};
     req.set(http::field::host, qb::urls::base);
     req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
+    req.set(http::field::authorization, "Bot " + qb::detail::get_bot_token());
     req.body() = body;
     req.set(http::field::content_type, "application/json");
     req.set(http::field::content_length, body.size());
     req.prepare_payload();
+    qb::log::data("Sending request...", req);
 
     // Send the HTTP request to the remote host
     http::write(stream_, req);
