@@ -16,6 +16,7 @@ add_subdirectory(deps/nlohmann_json)
 
 add_executable(GameBot
     include/flags.hpp
+    src/parse.cpp include/parse.hpp
     src/utils.cpp include/utils.hpp
     src/debug.cpp include/debug.hpp
     src/wswrapper.cpp include/wswrapper.hpp
