@@ -2,6 +2,7 @@
 #define JSON_UTILS_HPP
 
 #include <nlohmann/json.hpp>
+
 namespace qb::json_utils
 {
 using json = nlohmann::json;
@@ -26,19 +27,6 @@ D def(const json& jd, const std::string& key, const D& d)
     return d;
 }
 
-inline std::string try_prettify(const std::string& data)
-{
-    try
-    {
-        return json::parse(data).dump(2);
-    }
-    catch (const std::exception& e)
-    {
-        return "ERROR_PRETTIFYING";
-    }
-    return "ERROR_PRETTIFYING";
-}
-
 inline json get_identify_packet(const std::string& token)
 {
     return json{{"op", 2},
@@ -51,6 +39,7 @@ inline json get_identify_packet(const std::string& token)
                     {"$referrer", ""},
                     {"$referring_domain", ""}}}}}};
 }
+
 } // namespace qb::json_utils
 
 #endif // JSON_UTILS_HPP
