@@ -102,13 +102,13 @@ web::WSWrapper web::context::acquire_websocket(const std::string& psocket_url)
     return std::move(ws);
 }
 
-const std::string& web::endpoint_str(Endpoint ep)
+std::string web::endpoint_str(Endpoint ep, const std::string& specifier)
 {
     using EP = web::Endpoint;
     switch (ep)
     {
     case EP::channels:
-        return qb::endpoints::channel;
+        return qb::endpoints::channel_msg(specifier);
     case EP::gateway_bot:
         return qb::endpoints::bot;
     default:
@@ -123,7 +123,6 @@ const std::string& web::endpoint_str(Endpoint ep)
     req.set(http::field::host, qb::urls::base);
     req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
     req.set(http::field::authorization, "Bot " + qb::detail::get_bot_token());
-    // http::field::content_type, "application/json"
 
     // Step 03.1 - Send the HTTP request to the remote host
     qb::log::point("Writing an HTTP request.");
@@ -140,11 +139,11 @@ const std::string& web::endpoint_str(Endpoint ep)
     return json::parse(res.body());
 }
 
-nlohmann::json web::context::post(Endpoint ep, const std::string& body)
+nlohmann::json web::context::post(Endpoint ep, const std::string& specifier, const std::string& body)
 {
     qb::log::point("Creating an HTTP POST request.");
     // Set up an HTTP POST request message
-    http::request<http::string_body> req{http::verb::post, endpoint_str(ep), qb::http_version};
+    http::request<http::string_body> req{http::verb::post, endpoint_str(ep, specifier), qb::http_version};
     req.set(http::field::host, qb::urls::base);
     req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
     req.set(http::field::authorization, "Bot " + qb::detail::get_bot_token());

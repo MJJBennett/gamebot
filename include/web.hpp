@@ -18,7 +18,7 @@ enum class Endpoint
     gateway_bot,
 };
 
-const std::string& endpoint_str(Endpoint);
+std::string endpoint_str(Endpoint, const std::string& specifier = "");
 
 class context
 {
@@ -32,7 +32,7 @@ public:
     [[nodiscard]] WSWrapper acquire_websocket(const std::string& url);
 
     [[nodiscard]] nlohmann::json get(Endpoint);
-    nlohmann::json post(Endpoint, const std::string& body);
+    nlohmann::json post(Endpoint, const std::string& specifier, const std::string& body);
 
     boost::asio::io_context* ioc_ptr()
     {

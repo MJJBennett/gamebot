@@ -45,11 +45,14 @@ private:
     void handle_hello(const nlohmann::json& payload);
     void handle_event(const nlohmann::json& payload);
 
+    // Simple message sender
+    void send(std::string msg, std::string channel);
+
 private:
     std::optional<web::WSWrapper> ws_;                 // WebSocket connection
-    std::unique_ptr<boost::asio::io_context> ioc_{};   // IO Context handler
     boost::beast::flat_buffer buffer_;                 // Persistent read buffer
     std::optional<boost::asio::steady_timer> timer_{}; // Persistent write timer
+    web::context* web_ctx_{nullptr};                   // Our own web context
 
     unsigned int hb_interval_ms_{0};      // Interval between heartbeats.
     bool outstanding_write_{false};       // True if an async_write is currently in progress.

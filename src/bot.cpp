@@ -56,11 +56,19 @@ void qb::Bot::handle_event(const json& payload)
         const auto cmd = qb::parse::remove_non_cmd(payload["d"]["content"]);
         qb::log::point("Attempting to parse command: ", cmd);
         if (cmd == "stop") shutdown();
+        if (cmd == "try") send("Hello world!!!", payload["d"]["guild_id"]);
     }
     else if (et == "READY")
     {
         qb::log::point("A ready payload was sent.");
     }
+}
+
+void qb::Bot::send(std::string msg, std::string channel)
+{
+    json msg_json{{"content", msg}};
+    const auto resp = web_ctx_->post(web::Endpoint::channels, channel, msg_json.dump()); 
+    qb::log::data("Response", resp.dump(2));
 }
 
 /*****
@@ -209,6 +217,7 @@ void qb::Bot::start()
     qb::log::point("Creating a web context.");
     web::context web_context;
     web_context.initialize();
+    web_ctx_ = &web_context;
 
     qb::log::point("Creating timer for ping operations.");
     timer_.emplace(*web_context.ioc_ptr(), boost::asio::chrono::milliseconds(hb_interval_ms_));
