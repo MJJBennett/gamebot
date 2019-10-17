@@ -56,7 +56,7 @@ void qb::Bot::handle_event(const json& payload)
         const auto cmd = qb::parse::remove_non_cmd(payload["d"]["content"]);
         qb::log::point("Attempting to parse command: ", cmd);
         if (cmd == "stop") shutdown();
-        if (cmd == "try") send("Hello world!!!", payload["d"]["guild_id"]);
+        if (cmd == "try") send("Hello world!!!", payload["d"]["channel_id"]);
     }
     else if (et == "READY")
     {
