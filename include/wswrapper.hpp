@@ -20,19 +20,16 @@ public:
     {
         return ws_.get();
     }
-    void validate();
-    bool operator==(const WSWrapper& other)
-    {
-        return other.ws_.get() == ws_.get();
-    }
     void disconnect();
 
     boost::asio::ip::tcp::resolver resolver_;
+
 private:
     std::unique_ptr<WebSocket> ws_;
     boost::asio::ssl::context ctx_;
     boost::asio::io_context& ioc_;
 };
+
 } // namespace web
 
 #endif // WSWRAPPER_HPP

@@ -54,9 +54,3 @@ void web::WSWrapper::disconnect()
     }
     ws_.reset();
 }
-
-void web::WSWrapper::validate()
-{
-    qb::log::normal("Validating WSWrapper.");
-    qb::log::normal("Is ws_ null?", (ws_ ? "no" : "yes"));
-}
