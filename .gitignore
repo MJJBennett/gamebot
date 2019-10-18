@@ -1,7 +1,6 @@
 .idea/
 cmake-build-debug/
 client_id.hpp
-deps/nlohmann_json
 compile_commands.json
 output
 *.swp
