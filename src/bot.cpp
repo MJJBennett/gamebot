@@ -2,10 +2,10 @@
 
 #include "debug.hpp"
 #include "json_utils.hpp"
+#include "messages.hpp"
 #include "parse.hpp" // For command parsing
 #include "utils.hpp" // For get_bot_token
 #include "web.hpp"
-#include "messages.hpp"
 #include <boost/asio/steady_timer.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/websocket.hpp>
@@ -47,23 +47,23 @@ void qb::Bot::handle_hello(const json& payload)
 void qb::Bot::handle_event(const json& payload)
 {
     using namespace qb::parse;
-    namespace messages= qb::messages;
+    namespace messages = qb::messages;
 
     const auto et = j::def(payload, "t", std::string{"ERR"});
     if (et == "MESSAGE_CREATE")
     {
         qb::log::point("A message was created.");
-        qb::log::data("Message", payload.dump(2));
+        // qb::log::data("Message", payload.dump(2));
 
         // New Message!
         const auto contents = payload["d"]["content"];
         if (qb::parse::is_command(contents))
         {
-            const auto cmd = qb::parse::get_command(contents);
+            const auto cmd     = qb::parse::get_command(contents);
             const auto channel = payload["d"]["channel_id"];
             qb::log::point("Attempting to parse command: ", cmd);
 
-            if (startswith(cmd, "stop ")) shutdown();
+            if (startswithword(cmd, "stop")) shutdown();
             if (startswith(cmd, "print ")) send("Hello world!!!", channel);
             if (startswith(cmd, "queue ")) send(messages::queue_start(cmd), channel);
         }

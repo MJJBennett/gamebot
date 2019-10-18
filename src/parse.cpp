@@ -19,6 +19,12 @@ std::string qb::parse::remove_non_cmd(std::string str)
                        std::find_if(str.rbegin(), str.rend(), pred).base());
 }
 
+bool qb::parse::startswithword(const std::string& str, const std::string& start)
+{
+    return ((start.size() == str.size()) && str.substr(0, start.size()) == start) ||
+           ((start.size() < str.size()) && !isalpha(str[start.size()]) && str.substr(0, start.size()) == start);
+}
+
 bool qb::parse::is_command(std::string str)
 {
     return startswith(trim_leading_ignored(str), config::cmd_start());

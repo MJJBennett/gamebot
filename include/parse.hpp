@@ -23,6 +23,9 @@ inline bool startswith(const std::string& str, const std::string& start)
     return ((start.size() <= str.size()) && str.substr(0, start.size()) == start);
 }
 
+/** Returns whether the first input string starts with the second followed by a non-alphanumeric character. **/
+bool startswithword(const std::string& str, const std::string& start);
+
 /** Returns whether the input string is a potential command. **/
 bool is_command(std::string str);
 
