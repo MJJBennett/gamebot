@@ -47,6 +47,11 @@ private:
     void send(std::string msg, std::string channel);
 
 private:
+    /** Command handlers. **/
+    void print(const std::string& cmd, const std::string& channel);
+    void queue(const std::string& cmd, const std::string& channel);
+
+private:
     std::optional<web::WSWrapper> ws_;                 // WebSocket connection
     boost::beast::flat_buffer buffer_;                 // Persistent read buffer
     std::optional<boost::asio::steady_timer> timer_{}; // Persistent write timer

@@ -2,6 +2,7 @@
 #define PARSE_HPP
 
 #include <string>
+#include <vector>
 
 namespace qb::parse
 {
@@ -10,6 +11,9 @@ std::string remove_non_cmd(std::string str);
 
 /** Removes ignored leading characters from a string. **/
 std::string trim_leading_ignored(std::string str);
+
+/** Splits a string by the character delimiter. **/
+std::vector<std::string> split(const std::string&, char delim=' ');
 
 /** Takes a string and returns if it is a stop command. **/
 inline bool is_stop(std::string msg)

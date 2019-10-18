@@ -12,6 +12,20 @@ std::string qb::parse::trim_leading_ignored(std::string str)
             str.end()};
 }
 
+std::vector<std::string> qb::parse::split(const std::string& str, char delim)
+{
+    std::vector<std::string> v;
+    auto itr = str.begin();
+    while (itr != str.end())
+    {
+        itr = std::find_if_not(itr, str.end(), [delim](char c) { return c == delim; });
+        const auto itr_end = std::find_if(itr, str.end(), [delim](char c) { return c == delim; });
+        v.push_back({itr, itr_end});
+        itr = itr_end;
+    }
+    return v;
+}
+
 std::string qb::parse::remove_non_cmd(std::string str)
 {
     auto pred = [](char c) { return std::isalpha(c) || c == '!'; };

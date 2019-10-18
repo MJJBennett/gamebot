@@ -63,9 +63,12 @@ void qb::Bot::handle_event(const json& payload)
             const auto channel = payload["d"]["channel_id"];
             qb::log::point("Attempting to parse command: ", cmd);
 
-            if (startswithword(cmd, "stop")) shutdown();
-            if (startswith(cmd, "print ")) send("Hello world!!!", channel);
-            if (startswith(cmd, "queue ")) send(messages::queue_start(cmd), channel);
+            if (startswithword(cmd, "stop"))
+                shutdown();
+            else if (startswith(cmd, "print "))
+                print(cmd, channel);
+            else if (startswith(cmd, "queue "))
+                queue(cmd, channel);
         }
     }
     else if (et == "READY")
@@ -79,6 +82,23 @@ void qb::Bot::send(std::string msg, std::string channel)
     json msg_json{{"content", msg}};
     const auto resp = web_ctx_->post(web::Endpoint::channels, channel, msg_json.dump());
     qb::log::data("Response", resp.dump(2));
+}
+
+/*****
+ *
+ * User interaction logic.
+ *
+ ****/
+
+void qb::Bot::print(const std::string& cmd, const std::string& channel)
+{
+    send(cmd.substr(6), channel);
+}
+
+void qb::Bot::queue(const std::string& cmd, const std::string& channel)
+{
+    auto contents = qb::parse::split(cmd.substr(6));
+    send(messages::queue_start(contents), channel);
 }
 
 /*****
