@@ -22,14 +22,13 @@ const std::string base = "discordapp.com";
 
 namespace endpoints
 {
+const std::string invalid   = "";
 const std::string websocket = "/?v=6&encoding=json";
 const std::string bot       = "/api/v6/gateway/bot";
-// const std::string channel   = "/api/v6/channels/";
-const auto channel_msg = [](const std::string& channel_id) {
+const auto channel_msg      = [](const std::string& channel_id) {
     return "/api/v6/channels/" + channel_id + "/messages";
+
 };
-// const std::string temp_channels = "/api/v6/channels/channel_id/messages";
-const std::string invalid = "";
 
 } // namespace endpoints
 

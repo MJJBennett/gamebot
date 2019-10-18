@@ -18,7 +18,7 @@ add_executable(GameBot
     include/flags.hpp
     src/parse.cpp include/parse.hpp
     src/utils.cpp include/utils.hpp
-    src/debug.cpp include/debug.hpp
+    include/debug.hpp
     src/wswrapper.cpp include/wswrapper.hpp
     src/web.cpp include/web.hpp
     src/bot.cpp include/bot.hpp

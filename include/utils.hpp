@@ -4,7 +4,6 @@
 
 namespace qb::detail
 {
-std::string get_client_id();
 std::string get_bot_token();
 } // namespace qb::detail
 

@@ -1,15 +1,14 @@
 #include "bot.hpp"
+
 #include "debug.hpp"
 #include "json_utils.hpp"
-#include "parse.hpp"
-#include "utils.hpp"
+#include "parse.hpp" // For command parsing
+#include "utils.hpp" // For get_bot_token
 #include "web.hpp"
 #include <boost/asio/steady_timer.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/websocket.hpp>
 #include <boost/beast/websocket/ssl.hpp>
-#include <nlohmann/json.hpp>
-#include <thread>
 
 namespace beast     = boost::beast;
 namespace asio      = boost::asio;
@@ -43,13 +42,13 @@ void qb::Bot::handle_hello(const json& payload)
     dispatch_write(identify_packet.dump());
 }
 
+/** Event handling - all user-interaction code starts here. **/
 void qb::Bot::handle_event(const json& payload)
 {
     const auto et = j::def(payload, "t", std::string{"ERR"});
     if (et == "MESSAGE_CREATE")
     {
         qb::log::point("A message was created.");
-        // Print it for debug for now
         qb::log::data("Message", payload.dump(2));
 
         // New Message!
@@ -67,7 +66,7 @@ void qb::Bot::handle_event(const json& payload)
 void qb::Bot::send(std::string msg, std::string channel)
 {
     json msg_json{{"content", msg}};
-    const auto resp = web_ctx_->post(web::Endpoint::channels, channel, msg_json.dump()); 
+    const auto resp = web_ctx_->post(web::Endpoint::channels, channel, msg_json.dump());
     qb::log::data("Response", resp.dump(2));
 }
 

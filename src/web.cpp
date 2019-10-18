@@ -1,33 +1,25 @@
 #include "web.hpp"
+
 #include "debug.hpp"
-#include "json_utils.hpp"
 #include "strings.hpp"
 #include "utils.hpp"
 #include <boost/asio/connect.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/error.hpp>
-#include <boost/asio/ssl/stream.hpp>
-#include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
-#include <boost/beast/ssl.hpp>
 #include <boost/beast/version.hpp>
 #include <boost/beast/websocket.hpp>
 #include <boost/beast/websocket/ssl.hpp>
-#include <iostream>
-#include <string>
 
 namespace beast     = boost::beast;
 namespace http      = beast::http;
 namespace asio      = boost::asio;
-namespace ssl       = asio::ssl;
 namespace websocket = beast::websocket;
-using tcp           = asio::ip::tcp;
-using json          = nlohmann::json;
 
 web::context::context()
 {
     ctx_.set_options(asio::ssl::context::default_workarounds);
-    ctx_.set_verify_mode(ssl::verify_peer);
+    ctx_.set_verify_mode(asio::ssl::verify_peer);
 
     // Set SNI Hostname (many hosts need this to handshake successfully)
     if (!SSL_set_tlsext_host_name(stream_.native_handle(), qb::urls::base.data()))
@@ -47,22 +39,24 @@ void web::context::initialize()
     beast::get_lowest_layer(stream_).connect(results);
 
     qb::log::normal("Performing SSL handshake.");
-    stream_.handshake(ssl::stream_base::client);
+    stream_.handshake(asio::ssl::stream_base::client);
 
+    initialized_ = true;
     qb::log::point("Finished initializing web context.");
 }
 
 web::context::~context()
 {
-    shutdown();
+    if (initialized_) shutdown();
 }
 
 void web::context::shutdown()
 {
-    // Gracefully close the stream
+    initialized_ = false;
+    // Properly close the stream to make sure the remote server is aware.
     beast::error_code ec;
     stream_.shutdown(ec);
-    if (ec == asio::error::eof || ec == ssl::error::stream_truncated)
+    if (ec == asio::error::eof || ec == asio::ssl::error::stream_truncated)
     {
         qb::log::normal("Ignoring error:", beast::system_error{ec}.what());
         ec = {};
@@ -72,6 +66,8 @@ void web::context::shutdown()
 
 web::WSWrapper web::context::acquire_websocket(const std::string& psocket_url)
 {
+    assert(initialized_);
+
     /** Step 07 - Connect to the socket using websockets and SSL. **/
     qb::log::normal("Connecting to websocket at URL:", psocket_url, "& port:", qb::strings::port);
     qb::log::normal("Fixing the URL to remove wss://...");
@@ -88,7 +84,7 @@ web::WSWrapper web::context::acquire_websocket(const std::string& psocket_url)
     asio::connect(ws->next_layer().next_layer(), results.begin(), results.end());
 
     qb::log::normal("Performing SSL handshake.");
-    ws->next_layer().handshake(ssl::stream_base::client);
+    ws->next_layer().handshake(asio::ssl::stream_base::client);
 
     // Set a decorator to change the User-Agent of the handshake
     ws->set_option(websocket::stream_base::decorator([](websocket::request_type& req) {
@@ -118,6 +114,8 @@ std::string web::endpoint_str(Endpoint ep, const std::string& specifier)
 
 [[nodiscard]] nlohmann::json web::context::get(Endpoint ep)
 {
+    assert(initialized_);
+
     qb::log::normal("Creating an HTTP GET request.");
     http::request<http::string_body> req{http::verb::get, endpoint_str(ep), qb::http_version};
     req.set(http::field::host, qb::urls::base);
@@ -136,11 +134,13 @@ std::string web::endpoint_str(Endpoint ep, const std::string& specifier)
     http::read(stream_, buffer, res);
 
     // Step 04 - Translate the response to JSON
-    return json::parse(res.body());
+    return nlohmann::json::parse(res.body());
 }
 
 nlohmann::json web::context::post(Endpoint ep, const std::string& specifier, const std::string& body)
 {
+    assert(initialized_);
+
     qb::log::point("Creating an HTTP POST request.");
     // Set up an HTTP POST request message
     http::request<http::string_body> req{http::verb::post, endpoint_str(ep, specifier), qb::http_version};
@@ -164,19 +164,5 @@ nlohmann::json web::context::post(Endpoint ep, const std::string& specifier, con
 
     // Receive the HTTP response
     http::read(stream_, buffer, res);
-    return json::parse(res.body());
+    return nlohmann::json::parse(res.body());
 }
-
-/* Example of managing errors in Boost
-nlohmann::json web::context::get_bot_socket()
-{
-    try
-    {
-    }
-    catch (const std::exception& e)
-    {
-        qb::log::err(e.what());
-        return {{"Error", e.what()}};
-    }
-}
-*/
