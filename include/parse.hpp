@@ -8,6 +8,9 @@ namespace qb::parse
 /** Takes a string and returns the command portion of it. **/
 std::string remove_non_cmd(std::string str);
 
+/** Removes ignored leading characters from a string. **/
+std::string trim_leading_ignored(std::string str);
+
 /** Takes a string and returns if it is a stop command. **/
 inline bool is_stop(std::string msg)
 {
@@ -19,6 +22,12 @@ inline bool startswith(const std::string& str, const std::string& start)
 {
     return ((start.size() <= str.size()) && str.substr(0, start.size()) == start);
 }
+
+/** Returns whether the input string is a potential command. **/
+bool is_command(std::string str);
+
+/** Returns the command portion of an input command. **/
+std::string get_command(std::string str);
 
 } // namespace qb::parse
 

@@ -45,6 +45,8 @@ void qb::Bot::handle_hello(const json& payload)
 /** Event handling - all user-interaction code starts here. **/
 void qb::Bot::handle_event(const json& payload)
 {
+    using namespace qb::parse;
+
     const auto et = j::def(payload, "t", std::string{"ERR"});
     if (et == "MESSAGE_CREATE")
     {
@@ -52,10 +54,17 @@ void qb::Bot::handle_event(const json& payload)
         qb::log::data("Message", payload.dump(2));
 
         // New Message!
-        const auto cmd = qb::parse::remove_non_cmd(payload["d"]["content"]);
-        qb::log::point("Attempting to parse command: ", cmd);
-        if (cmd == "stop") shutdown();
-        if (cmd == "try") send("Hello world!!!", payload["d"]["channel_id"]);
+        const auto contents = payload["d"]["content"];
+        if (qb::parse::is_command(contents))
+        {
+            const auto cmd = qb::parse::get_command(contents);
+            const auto channel = payload["d"]["channel_id"];
+            qb::log::point("Attempting to parse command: ", cmd);
+
+            if (startswith(cmd, "stop ")) shutdown();
+            if (startswith(cmd, "print ")) send("Hello world!!!", channel);
+            if (startswith(cmd, "queue ")) send("ok", channel);
+        }
     }
     else if (et == "READY")
     {
