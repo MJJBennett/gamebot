@@ -5,6 +5,7 @@
 #include "parse.hpp" // For command parsing
 #include "utils.hpp" // For get_bot_token
 #include "web.hpp"
+#include "messages.hpp"
 #include <boost/asio/steady_timer.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/websocket.hpp>
@@ -46,6 +47,7 @@ void qb::Bot::handle_hello(const json& payload)
 void qb::Bot::handle_event(const json& payload)
 {
     using namespace qb::parse;
+    namespace messages= qb::messages;
 
     const auto et = j::def(payload, "t", std::string{"ERR"});
     if (et == "MESSAGE_CREATE")
@@ -63,7 +65,7 @@ void qb::Bot::handle_event(const json& payload)
 
             if (startswith(cmd, "stop ")) shutdown();
             if (startswith(cmd, "print ")) send("Hello world!!!", channel);
-            if (startswith(cmd, "queue ")) send("ok", channel);
+            if (startswith(cmd, "queue ")) send(messages::queue_start(cmd), channel);
         }
     }
     else if (et == "READY")
