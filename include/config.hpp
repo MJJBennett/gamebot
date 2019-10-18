@@ -9,7 +9,7 @@ namespace qb::config
 using json       = nlohmann::json;
 const auto conf_ = json{{"command_start", "!qb "}};
 
-const std::string& cmd_start()
+inline std::string cmd_start()
 {
     return conf_["command_start"];
 }
