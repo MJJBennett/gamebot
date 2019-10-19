@@ -1,4 +1,4 @@
-SET(GOOGLETEST_DIR ${PROJECT_SOURCE_DIR}/deps/googletest)
+SET(GOOGLETEST_DIR ${CMAKE_SOURCE_DIR}/deps/googletest)
 if(IS_DIRECTORY ${GOOGLETEST_DIR})
 
 project(QueueBotTests)
@@ -9,10 +9,12 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 # Add googletest directly to our build. This defines
 # the gtest and gtest_main targets.
 add_subdirectory(${GOOGLETEST_DIR}
+                 ${PROJECT_BINARY_DIR}/gtest
                  EXCLUDE_FROM_ALL)
 
-add_executable(QueueBotTests Test_Parse.cpp)
-target_include_directories(QueueBotTests PRIVATE "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>")
+add_executable(QueueBotTests Test_Parse.cpp ${CMAKE_SOURCE_DIR}/src/parse.cpp)
+target_include_directories(QueueBotTests PRIVATE "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>")
+target_include_directories(QueueBotTests PRIVATE "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/deps/nlohmann_json/single_include>")
 target_link_libraries(QueueBotTests gtest_main)
 add_test(NAME Simple COMMAND QueueBotTests)
 

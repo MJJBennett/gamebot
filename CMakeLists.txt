@@ -27,3 +27,8 @@ add_executable(GameBot
 target_link_libraries(GameBot PUBLIC OpenSSL::SSL)
 target_link_libraries(GameBot PRIVATE Boost::program_options)
 target_link_libraries(GameBot PRIVATE nlohmann_json::nlohmann_json)
+
+if(DEFINED QBTEST)
+enable_testing()
+add_subdirectory(test)
+endif()
