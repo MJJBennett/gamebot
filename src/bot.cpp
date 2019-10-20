@@ -6,6 +6,7 @@
 #include "parse.hpp" // For command parsing
 #include "utils.hpp" // For get_bot_token
 #include "web.hpp"
+#include <algorithm>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/websocket.hpp>
@@ -69,6 +70,8 @@ void qb::Bot::handle_event(const json& payload)
                 print(cmd, channel);
             else if (startswith(cmd, "queue "))
                 queue(cmd, channel);
+            else if (startswith(cmd, "s"))
+                store(cmd, channel);
         }
     }
     else if (et == "READY")
@@ -99,6 +102,32 @@ void qb::Bot::queue(const std::string& cmd, const std::string& channel)
 {
     auto contents = qb::parse::split(cmd.substr(6));
     send(messages::queue_start(contents), channel);
+}
+
+void qb::Bot::store(const std::string& cmd, const std::string& channel)
+{
+    // This command has variants, so we need to get the actual length of the command
+    auto before   = std::string{cmd.cbegin(), std::find_if(cmd.cbegin(), cmd.cend(), isspace)};
+    auto contents = qb::parse::split(cmd.substr(before.size()), ',');
+
+    std::vector<std::string> ignored;
+    std::vector<std::string> stored;
+    for (auto&& str : contents)
+    {
+        // We need to validate each string
+        const auto trimmed = qb::parse::trim(str);
+        if (trimmed.size() > qb::config::max_skribbl_wordsize)
+        {
+            ignored.emplace_back(std::move(trimmed));
+            continue;
+        }
+        stored.emplace_back(std::move(trimmed));
+    }
+
+    // We ignored some of them, let's let the user know.
+    if (!ignored.empty()) send(messages::cannot_store(ignored), channel);
+    // For now, let's tell the user that we saved the messages.
+    if (!stored.empty()) send(messages::did_store(stored), channel);
 }
 
 /*****

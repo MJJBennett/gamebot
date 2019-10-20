@@ -39,7 +39,7 @@ template <typename Type, typename Range>
 bool in(Type t, Range range)
 {
     // Currently an inefficient but functional approach.
-    for (const auto&& maybe_t : range)
+    for (const auto maybe_t : range)
     {
         if (maybe_t == t) return true;
     }
@@ -51,6 +51,30 @@ bool is_command(std::string str);
 
 /** Returns the command portion of an input command. **/
 std::string get_command(std::string str);
+
+/** Concatenates strings. **/
+inline std::string concatenate(std::vector<std::string> strs, std::string sep = ", ")
+{
+    if (strs.empty()) return "";
+    std::string ret;
+    for (auto&& str : strs)
+    {
+        ret += str + sep;
+    }
+    return ret.substr(0, ret.size() - sep.size());
+}
+
+/** Concatenates strings, but quoted. **/
+inline std::string concatenate_quoted(std::vector<std::string> strs, std::string sep = ", ")
+{
+    if (strs.empty()) return "";
+    std::string ret;
+    for (auto&& str : strs)
+    {
+        ret += "\"" + str + "\"" + sep;
+    }
+    return ret.substr(0, ret.size() - sep.size());
+}
 
 } // namespace qb::parse
 

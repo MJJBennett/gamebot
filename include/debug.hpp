@@ -33,6 +33,15 @@ void quoted(T t, Ts... ts)
     normal(std::forward<Ts>(ts)...);
 }
 
+/** Logs the contents of a range. **/
+template <typename R>
+void range(const R& r)
+{
+    for (auto&& c : r)
+        std::cout << c << ", ";
+    std::cout << std::endl;
+}
+
 template <typename T>
 void _err(T t)
 {
