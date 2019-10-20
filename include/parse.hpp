@@ -12,8 +12,13 @@ std::string remove_non_cmd(std::string str);
 /** Removes ignored leading characters from a string. **/
 std::string trim_leading_ignored(std::string str);
 
+/** Trims a string. **/
+std::string trim(std::string str, const std::string& to_trim = " ");
+std::string ltrim(std::string str, const std::string& to_trim = " ");
+std::string rtrim(std::string str, const std::string& to_trim = " ");
+
 /** Splits a string by the character delimiter. **/
-std::vector<std::string> split(const std::string&, char delim=' ');
+std::vector<std::string> split(const std::string&, char delim = ' ');
 
 /** Takes a string and returns if it is a stop command. **/
 inline bool is_stop(std::string msg)
@@ -29,6 +34,17 @@ inline bool startswith(const std::string& str, const std::string& start)
 
 /** Returns whether the first input string starts with the second followed by a non-alphanumeric character. **/
 bool startswithword(const std::string& str, const std::string& start);
+
+template <typename Type, typename Range>
+bool in(Type t, Range range)
+{
+    // Currently an inefficient but functional approach.
+    for (const auto&& maybe_t : range)
+    {
+        if (maybe_t == t) return true;
+    }
+    return false;
+}
 
 /** Returns whether the input string is a potential command. **/
 bool is_command(std::string str);

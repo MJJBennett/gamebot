@@ -12,6 +12,22 @@ std::string qb::parse::trim_leading_ignored(std::string str)
             str.end()};
 }
 
+std::string qb::parse::trim(std::string str, const std::string& to_trim)
+{
+    return ltrim(rtrim(str, to_trim));
+}
+
+std::string qb::parse::ltrim(std::string str, const std::string& to_trim)
+{
+    return {std::find_if(str.begin(), str.end(), [to_trim](char c) { return !in(c, to_trim); }), str.end()};
+}
+
+std::string qb::parse::rtrim(std::string str, const std::string& to_trim)
+{
+    return {str.begin(),
+            std::find_if(str.rbegin(), str.rend(), [to_trim](char c) { return !in(c, to_trim); }).base()};
+}
+
 std::vector<std::string> qb::parse::split(const std::string& str, char delim)
 {
     std::vector<std::string> v;
