@@ -77,6 +77,10 @@ void qb::Bot::handle_event(const json& payload)
                 send(qb::messages::online(), channel);
             else if (startswithword(cmd, "help"))
                 send(qb::messages::help, channel);
+            else if (startswithword(cmd, "db:writeincoming"))
+                write_incoming_ = true;
+            else if (startswithword(cmd, "db:nowriteincoming"))
+                write_incoming_ = false;
         }
     }
     else if (et == "READY")

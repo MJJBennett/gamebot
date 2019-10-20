@@ -163,6 +163,15 @@ nlohmann::json web::context::post(Endpoint ep, const std::string& specifier, con
     http::response<http::string_body> res;
 
     // Receive the HTTP response
-    http::read(stream_, buffer, res);
+    qb::log::point("Receiving POST response.");
+    try
+    {
+        http::read(stream_, buffer, res);
+    }
+    catch (const std::exception& e)
+    {
+        qb::log::err("Received error: ", e.what());
+        throw e;
+    }
     return nlohmann::json::parse(res.body());
 }
