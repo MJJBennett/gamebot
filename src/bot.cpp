@@ -1,6 +1,7 @@
 #include "bot.hpp"
 
 #include "debug.hpp"
+#include "fileio.hpp"
 #include "json_utils.hpp"
 #include "messages.hpp"
 #include "parse.hpp" // For command parsing
