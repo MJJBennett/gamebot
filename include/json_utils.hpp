@@ -27,7 +27,7 @@ D def(const json& jd, const std::string& key, const D& d)
     return d;
 }
 
-bool in(const json& jd, const std::string& key)
+inline bool in(const json& jd, const std::string& key)
 {
     return jd.find(key) != jd.end();
 }

@@ -25,6 +25,7 @@ add_executable(GameBot
     src/bot.cpp include/bot.hpp
     src/main.cpp
 )
+target_link_libraries(GameBot PRIVATE stdc++fs)
 target_link_libraries(GameBot PUBLIC OpenSSL::SSL)
 target_link_libraries(GameBot PRIVATE Boost::program_options)
 target_link_libraries(GameBot PRIVATE nlohmann_json::nlohmann_json)
