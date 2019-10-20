@@ -19,6 +19,20 @@ void normal(T t, Ts... ts)
     normal(std::forward<Ts>(ts)...);
 }
 
+/** Logs things inside of quotes. **/
+template <typename T>
+void quoted(T t)
+{
+    std::cout << '"' << t << '"' << std::endl;
+}
+
+template <typename T, typename... Ts>
+void quoted(T t, Ts... ts)
+{
+    std::cout << '"' << t << "\" ";
+    normal(std::forward<Ts>(ts)...);
+}
+
 template <typename T>
 void _err(T t)
 {
