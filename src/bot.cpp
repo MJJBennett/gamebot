@@ -73,6 +73,10 @@ void qb::Bot::handle_event(const json& payload)
                 queue(cmd, channel);
             else if (startswith(cmd, "s"))
                 store(cmd, channel);
+            else if (startswithword(cmd, "online"))
+                send(qb::messages::online, channel);
+            else if (startswithword(cmd, "help"))
+                send(qb::messages::help, channel);
         }
     }
     else if (et == "READY")

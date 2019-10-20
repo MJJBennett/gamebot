@@ -25,6 +25,10 @@ inline std::string did_store(const std::vector<std::string>& ignored)
 {
     return "Stored the following words for Skribbl: " + qb::parse::concatenate_quoted(ignored);
 }
+
+const std::string online{"Of course I'm online. 100% uptime, my friend. 100% uptime."};
+//std::string online() {//return random phrase}
+const std::string help{"Storing command is \"!qb s\" followed by each word (or phrase), separated by commas."};
 } // namespace qb::messages
 
 #endif // MESSAGES_HPP
