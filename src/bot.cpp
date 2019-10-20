@@ -127,7 +127,11 @@ void qb::Bot::store(const std::string& cmd, const std::string& channel)
     // We ignored some of them, let's let the user know.
     if (!ignored.empty()) send(messages::cannot_store(ignored), channel);
     // For now, let's tell the user that we saved the messages.
-    if (!stored.empty()) send(messages::did_store(stored), channel);
+    if (!stored.empty())
+    {
+        qb::fileio::add_default(stored);
+        send(messages::did_store(stored), channel);
+    }
 }
 
 /*****

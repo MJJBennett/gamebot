@@ -16,6 +16,7 @@ add_subdirectory(deps/nlohmann_json)
 
 add_executable(GameBot
     include/config.hpp
+    src/fileio.cpp include/fileio.hpp
     src/parse.cpp include/parse.hpp
     src/utils.cpp include/utils.hpp
     include/debug.hpp

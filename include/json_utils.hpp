@@ -27,6 +27,11 @@ D def(const json& jd, const std::string& key, const D& d)
     return d;
 }
 
+bool in(const json& jd, const std::string& key)
+{
+    return jd.find(key) != jd.end();
+}
+
 inline json get_identify_packet(const std::string& token)
 {
     return json{{"op", 2},

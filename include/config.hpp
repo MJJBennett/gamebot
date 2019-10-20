@@ -6,14 +6,19 @@
 
 namespace qb::config
 {
-using json                                = nlohmann::json;
-const auto conf_                          = json{{"command_start", "!qb "}};
+using json       = nlohmann::json;
+const auto conf_ = json{{"command_start", "!qb "}, {"skribbl_path", "skribbl.json"}};
 constexpr int max_skribbl_wordsize        = 30;
 const std::string max_skribble_wordsize_s = "30";
 
 inline std::string cmd_start()
 {
     return conf_["command_start"];
+}
+
+inline std::string skribbl_data_file()
+{
+    return conf_["skribbl_path"];
 }
 
 } // namespace qb::config
