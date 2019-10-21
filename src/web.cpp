@@ -61,7 +61,11 @@ void web::context::shutdown()
         qb::log::normal("Ignoring error:", beast::system_error{ec}.what());
         ec = {};
     }
-    if (ec) throw beast::system_error{ec};
+    if (ec)
+    {
+        qb::log::point("Encountered error while shutting down web context stream.");
+        throw beast::system_error{ec};
+    }
 }
 
 web::WSWrapper web::context::acquire_websocket(const std::string& psocket_url)
@@ -171,7 +175,21 @@ nlohmann::json web::context::post(Endpoint ep, const std::string& specifier, con
     catch (const std::exception& e)
     {
         qb::log::err("Received error: ", e.what());
-        throw e;
+        if (!failed_)
+        {
+            failed_ = true;
+            // It's possible our stream has somehow become disconnected
+            // Instead of instantly erroring, let's set the fail check,
+            // reinitialize and try again.
+            shutdown();
+            initialize();
+            return post(ep, specifier, body);
+        }
+        else
+        {
+            throw e;
+        }
     }
+    failed_ = false;
     return nlohmann::json::parse(res.body());
 }

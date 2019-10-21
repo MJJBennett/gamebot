@@ -59,6 +59,7 @@ private:
     boost::beast::ssl_stream<boost::beast::tcp_stream> stream_{ioc_, ctx_};
 
     bool initialized_{false};
+    bool failed_{false};
 };
 
 } // namespace web
