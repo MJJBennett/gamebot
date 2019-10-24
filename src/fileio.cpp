@@ -10,6 +10,15 @@ bool qb::fileio::skribbl::storage_exists()
     return std::filesystem::exists(qb::config::skribbl_data_file());
 }
 
+std::vector<std::string> qb::fileio::skribbl::keys()
+{
+    const auto d = get_data();
+    std::vector<std::string> keylist;
+    for (auto& [key, value] : d.items())
+        keylist.push_back(key);
+    return keylist;
+}
+
 nlohmann::json qb::fileio::skribbl::get_data()
 {
     nlohmann::json j;

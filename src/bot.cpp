@@ -75,6 +75,8 @@ void qb::Bot::handle_event(const json& payload)
                 store(cmd, channel);
             else if (startswithword(cmd, "online"))
                 send(qb::messages::online(), channel);
+            else if (startswithword(cmd, "list"))
+                list(cmd, channel);
             else if (startswithword(cmd, "help"))
                 send(qb::messages::help, channel);
             else if (startswithword(cmd, "db:writeincoming"))
@@ -107,6 +109,12 @@ void qb::Bot::send(std::string msg, std::string channel)
 void qb::Bot::print(const std::string& cmd, const std::string& channel)
 {
     send(cmd.substr(6), channel);
+}
+
+void qb::Bot::list(const std::string& cmd, const std::string& channel)
+{
+    // We need to build a list of all the JSON keys
+    send(qb::messages::keys(qb::parse::concatenate(qb::fileio::skribbl::keys())), channel);
 }
 
 void qb::Bot::queue(const std::string& cmd, const std::string& channel)
@@ -262,7 +270,7 @@ void qb::Bot::ping_sender(const boost::system::error_code& error)
 void qb::Bot::write_complete_handler(const boost::system::error_code& error, std::size_t bytes_transferred)
 {
     // Our most recent write is now complete. That's great!
-    qb::log::point("Completed a write with", bytes_transferred, "bytes transferred.");
+    qb::log::point("Completed a write with ", bytes_transferred, " bytes transferred.");
     if (error)
     {
         qb::log::err(error.message(), '|', error.category().name(), ':', error.value());

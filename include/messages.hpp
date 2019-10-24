@@ -32,6 +32,11 @@ inline std::string did_store(const std::vector<std::string>& ignored, const std:
            "': " + qb::parse::concatenate_quoted(ignored);
 }
 
+inline std::string keys(const std::string& keys)
+{
+    return "The following groups exist: " + keys;
+}
+
 // const std::string online{"Of course I'm online. 100% uptime, my friend. 100% uptime."};
 std::string online();
 const std::string help{

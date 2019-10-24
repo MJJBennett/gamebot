@@ -11,6 +11,7 @@ namespace skribbl
 {
 bool storage_exists();
 nlohmann::json get_data();
+std::vector<std::string> keys();
 }
 
 void add_default(const std::vector<std::string>&);
