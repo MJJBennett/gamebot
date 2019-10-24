@@ -56,7 +56,7 @@ void web::context::shutdown()
     // Properly close the stream to make sure the remote server is aware.
     beast::error_code ec;
     stream_.shutdown(ec);
-    if (ec == asio::error::eof || ec == asio::ssl::error::stream_truncated)
+    if (ec == asio::error::eof || ec == asio::ssl::error::stream_truncated || ec == asio::error::broken_pipe)
     {
         qb::log::normal("Ignoring error:", beast::system_error{ec}.what());
         ec = {};
