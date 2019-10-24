@@ -149,7 +149,7 @@ void qb::Bot::recall(const std::string& cmd, const std::string& channel)
 {
     auto cmd_name   = qb::parse::get_command_name(cmd);
     auto components = qb::parse::split(cmd_name, ':');
-    if (components.size() <= 1 || components[2] == "all")
+    if (components.size() <= 1 || components[1] == "all")
     {
         qb::log::point("Sending all in recall command.");
         send(qb::parse::concatenate(qb::fileio::get_all(), ","), channel);
@@ -159,9 +159,9 @@ void qb::Bot::recall(const std::string& cmd, const std::string& channel)
         components.erase(components.begin());
         qb::log::point("Sending ", qb::parse::concatenate(components), " in recall command.");
         if (components.size() == 1)
-            send(qb::parse::concatenate(qb::fileio::get_set(components.at(1))), channel);
+            send(qb::parse::concatenate(qb::fileio::get_set(components.at(0)), ","), channel);
         else
-            send(qb::parse::concatenate(qb::fileio::get_sets(components)), channel);
+            send(qb::parse::concatenate(qb::fileio::get_sets(components), ","), channel);
     }
 }
 
