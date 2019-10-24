@@ -1,5 +1,5 @@
-1. Dump (to chat) all words currently stored
-2. Wordsets
+1. Dump (to chat) all words currently stored - Done! (With wordset support)
+2. Wordsets - Done!
 3. Fix this bug:
 > Dispatching new read.
 > Parsing received data. Bytes transferred: 671
@@ -23,3 +23,7 @@ terminate called after throwing an instance of 'boost::system::system_error'
   what():  Broken pipe
 [1]    3460 abort      ./GameBot
 4. Automatically remove duplicates (case and metaword insensitive)
+5. [Mega] Add queue functionality.
+6. Break up large messages (what is the max?) into smaller ones to get around max size limits.
+7. Make send() obey ratelimiting procedures. This will require research into exactly what the ratelimit portion of headers indicates, and where it's located.
+
