@@ -81,6 +81,8 @@ void qb::Bot::handle_event(const json& payload)
                 write_incoming_ = true;
             else if (startswithword(cmd, "db:nowriteincoming"))
                 write_incoming_ = false;
+            else if (startswithword(cmd, "recall"))
+                recall(cmd, channel);
         }
     }
     else if (et == "READY")
@@ -141,6 +143,11 @@ void qb::Bot::store(const std::string& cmd, const std::string& channel)
         qb::fileio::add_default(stored);
         send(messages::did_store(stored), channel);
     }
+}
+
+void qb::Bot::recall(const std::string& cmd, const std::string& channel)
+{
+    send(qb::parse::concatenate(qb::fileio::get_all(), ","), channel);
 }
 
 /*****

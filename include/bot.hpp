@@ -51,6 +51,7 @@ private:
     void print(const std::string& cmd, const std::string& channel);
     void queue(const std::string& cmd, const std::string& channel);
     void store(const std::string& cmd, const std::string& channel);
+    void recall(const std::string& cmd, const std::string& channel);
 
 private:
     std::optional<web::WSWrapper> ws_;                 // WebSocket connection

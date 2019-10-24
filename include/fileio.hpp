@@ -6,7 +6,14 @@
 
 namespace qb::fileio
 {
-void add_default(const std::vector<std::string>&);
+namespace skribbl
+{
+bool storage_exists();
 }
+
+void add_default(const std::vector<std::string>&);
+
+std::vector<std::string> get_all();
+} // namespace qb::fileio
 
 #endif // FILE_IO
