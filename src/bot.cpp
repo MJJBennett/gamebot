@@ -95,6 +95,13 @@ void qb::Bot::handle_event(const json& payload)
 
 void qb::Bot::send(std::string msg, std::string channel)
 {
+    if (msg.size() > 2000)
+    {
+        send("I can't do that. [Message length too large: " + std::to_string(msg.size()) +
+                 " - Must be 2000 or less.]",
+             channel);
+        return;
+    }
     json msg_json{{"content", msg}};
     const auto resp = web_ctx_->post(web::Endpoint::channels, channel, msg_json.dump());
     qb::log::data("Response", resp.dump(2));
@@ -155,7 +162,7 @@ void qb::Bot::store(const std::string& cmd, const std::string& channel)
             send("A group name must be specified after the colon. (e.g. recall:groupname)", channel);
             return;
         }
-        std::string key{it+1, before.end()};
+        std::string key{it + 1, before.end()};
         qb::fileio::add_to_set(key, stored);
         send(messages::did_store(stored, key), channel);
     }

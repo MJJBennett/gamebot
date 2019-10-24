@@ -1,3 +1,5 @@
+TODO (In no particular order)
+
 1. Dump (to chat) all words currently stored - Done! (With wordset support)
 2. Wordsets - Done!
 3. Fix this bug:
@@ -26,4 +28,4 @@ terminate called after throwing an instance of 'boost::system::system_error'
 5. [Mega] Add queue functionality.
 6. Break up large messages (what is the max?) into smaller ones to get around max size limits.
 7. Make send() obey ratelimiting procedures. This will require research into exactly what the ratelimit portion of headers indicates, and where it's located.
-
+8. Check for out of bounds JSON access in all FileIO operations.
