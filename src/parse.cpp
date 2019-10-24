@@ -45,8 +45,7 @@ std::vector<std::string> qb::parse::split(const std::string& str, char delim)
 std::string qb::parse::remove_non_cmd(std::string str)
 {
     auto pred = [](char c) { return std::isalpha(c) || c == '!'; };
-    return std::string(std::find_if(str.begin(), str.end(), pred),
-                       std::find_if(str.rbegin(), str.rend(), pred).base());
+    return std::string(std::find_if(str.begin(), str.end(), pred), str.end());
 }
 
 bool qb::parse::startswithword(const std::string& str, const std::string& start)
@@ -71,6 +70,6 @@ std::string qb::parse::get_command(std::string str)
 std::string qb::parse::get_command_name(std::string str)
 {
     // Assumes cmd_start() has already been removed.
-    return {str.begin(),
-            std::find_if(str.begin(), str.end(), [](char c) { return !isalpha(c) && c != ':'; })};
+    auto s = std::find_if_not(str.begin(), str.end(), isspace);
+    return {s, std::find_if(s, str.end(), isspace)};
 }

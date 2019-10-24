@@ -137,8 +137,21 @@ void qb::Bot::store(const std::string& cmd, const std::string& channel)
 
     // We ignored some of them, let's let the user know.
     if (!ignored.empty()) send(messages::cannot_store(ignored), channel);
-    // For now, let's tell the user that we saved the messages.
-    if (!stored.empty())
+    if (stored.empty()) return;
+    // We need to find out if the user wants to store a specific group.
+    if (auto it = std::find_if(before.begin(), before.end(), [](char c) { return c == ':'; });
+        it != before.end())
+    {
+        if (it + 1 == before.end())
+        {
+            send("A group name must be specified after the colon. (e.g. recall:groupname)", channel);
+            return;
+        }
+        std::string key{it+1, before.end()};
+        qb::fileio::add_to_set(key, stored);
+        send(messages::did_store(stored, key), channel);
+    }
+    else
     {
         qb::fileio::add_default(stored);
         send(messages::did_store(stored), channel);
