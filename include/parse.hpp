@@ -52,6 +52,9 @@ bool is_command(std::string str);
 /** Returns the command portion of an input command. **/
 std::string get_command(std::string str);
 
+/** Returns command name (and potentially specifier). **/
+std::string get_command_name(std::string str);
+
 /** Concatenates strings. **/
 inline std::string concatenate(std::vector<std::string> strs, std::string sep = ", ")
 {

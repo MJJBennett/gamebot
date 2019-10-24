@@ -66,3 +66,12 @@ std::string qb::parse::get_command(std::string str)
     assert(startswith(cmd_seed, config::cmd_start()));
     return cmd_seed.substr(config::cmd_start().size());
 }
+
+std::string qb::parse::get_command_name(std::string str)
+{
+    auto cmd_seed = remove_non_cmd(str);
+    assert(startswith(cmd_seed, config::cmd_start()));
+    cmd_seed = cmd_seed.substr(config::cmd_start().size());
+    return {cmd_seed.begin(), std::find_if(cmd_seed.begin(), cmd_seed.end(),
+                                           [](char c) { return !isalpha(c) && c != ':'; })};
+}
