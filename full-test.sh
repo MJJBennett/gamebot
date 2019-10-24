@@ -6,6 +6,10 @@ script_dir=$(dirname "$0")
 # Move to that directory so we can reliably move to the correct build directory
 cd $script_dir
 
+# Skribbl testing - we need to set up our test JSON data
+# cp "test/test_skribbl.json" "test/test_skribbl.noedit.json"
+rm "test/test_skribbl.noedit.json"
+
 # Make and move to the output directory, ignore errors
 mkdir output >/dev/null 2>&1
 cd output

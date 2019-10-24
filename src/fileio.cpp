@@ -40,9 +40,23 @@ void qb::fileio::add_default(const std::vector<std::string>& words)
     o << j << std::endl;
 }
 
-void qb::fileio::add_to_set(const std::string& set, const std::vector<std::string>&)
+void qb::fileio::add_to_set(const std::string& set, const std::vector<std::string>& words)
 {
     auto j = skribbl::get_data();
+
+    if (!qb::json_utils::in(j, set))
+    {
+        j[set] = std::vector<std::string>{};
+    }
+
+    for (const auto& w : words)
+    {
+        j[set].push_back(w);
+    }
+
+    // Write the new data out again
+    std::ofstream o(qb::config::skribbl_data_file());
+    o << j << std::endl;
 }
 
 std::vector<std::string> qb::fileio::get_all()
@@ -70,6 +84,7 @@ std::vector<std::string> qb::fileio::get_set(const std::string& set)
 
     return j.at(set).get<std::vector<std::string>>();
 }
+
 std::vector<std::string> qb::fileio::get_sets(const std::vector<std::string>& sets)
 {
     if (!skribbl::storage_exists()) return {};

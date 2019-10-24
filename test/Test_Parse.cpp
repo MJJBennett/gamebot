@@ -15,7 +15,7 @@ TEST(Parse, remove_non_cmd)
 
 TEST(Parse, split)
 {
-    std::string a{"this is a simple string"};  
+    std::string a{"this is a simple string"};
     std::string b{" this    is a   second sample       string      "};
 
     std::vector<std::string> a_ans{"this", "is", "a", "simple", "string"};
@@ -23,13 +23,29 @@ TEST(Parse, split)
 
     auto vts = [](std::vector<std::string> s) {
         std::string ret{};
-        for (auto && str : s)
+        for (auto&& str : s)
         {
-            ret +=str;
+            ret += str;
         }
         return ret;
     };
-    
+
     EXPECT_EQ(vts(split(a)), vts(a_ans));
     EXPECT_EQ(vts(split(b)), vts(b_ans));
+}
+
+TEST(Parse, GetCommandName)
+{
+    std::string a{"command:name:with:specifiers and some arguments"};
+
+    EXPECT_EQ(get_command_name(a), "command:name:with:specifiers");
+}
+
+TEST(Parse, split_2)
+{
+    std::string a{"command:name:with:specifiers and some arguments"};
+
+    std::vector<std::string> a_ans{"command", "name", "with", "specifiers"};
+
+    EXPECT_EQ(concatenate(split(get_command_name(a), ':')), concatenate(a_ans));
 }
