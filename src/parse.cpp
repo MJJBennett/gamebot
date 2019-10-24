@@ -62,6 +62,7 @@ bool qb::parse::is_command(std::string str)
 
 std::string qb::parse::get_command(std::string str)
 {
+    // Assumes cmd_start() has not already been removed.
     auto cmd_seed = remove_non_cmd(str);
     assert(startswith(cmd_seed, config::cmd_start()));
     return cmd_seed.substr(config::cmd_start().size());
@@ -69,9 +70,7 @@ std::string qb::parse::get_command(std::string str)
 
 std::string qb::parse::get_command_name(std::string str)
 {
-    auto cmd_seed = remove_non_cmd(str);
-    assert(startswith(cmd_seed, config::cmd_start()));
-    cmd_seed = cmd_seed.substr(config::cmd_start().size());
-    return {cmd_seed.begin(), std::find_if(cmd_seed.begin(), cmd_seed.end(),
-                                           [](char c) { return !isalpha(c) && c != ':'; })};
+    // Assumes cmd_start() has already been removed.
+    return {str.begin(),
+            std::find_if(str.begin(), str.end(), [](char c) { return !isalpha(c) && c != ':'; })};
 }
