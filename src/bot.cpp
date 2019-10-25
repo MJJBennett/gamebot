@@ -39,7 +39,7 @@ void qb::Bot::handle_hello(const json& payload)
 
     // After receiving the Hello payload, we must identify with the remote server.
     const auto identify_packet = j::get_identify_packet(qb::detail::get_bot_token());
-    qb::log::data("Identification payload", identify_packet.dump(2));
+    // qb::log::data("Identification payload", identify_packet.dump(2));
 
     qb::log::point("Writing identification payload to websocket.");
     dispatch_write(identify_packet.dump());
@@ -70,7 +70,7 @@ void qb::Bot::handle_event(const json& payload)
             else if (startswith(cmd, "print "))
                 print(cmd, channel);
             else if (startswith(cmd, "queue "))
-                queue(cmd, channel);
+                queue(cmd, payload["d"]);
             else if (startswith(cmd, "s"))
                 store(cmd, channel);
             else if (startswithword(cmd, "online"))
@@ -85,6 +85,8 @@ void qb::Bot::handle_event(const json& payload)
                 write_incoming_ = false;
             else if (startswithword(cmd, "recall"))
                 recall(cmd, channel);
+            else if (startswith(cmd, "conf"))
+                configure(cmd, payload["d"]);
         }
     }
     else if (et == "READY")
@@ -124,10 +126,19 @@ void qb::Bot::list(const std::string& cmd, const std::string& channel)
     send(qb::messages::keys(qb::parse::concatenate(qb::fileio::skribbl::keys())), channel);
 }
 
-void qb::Bot::queue(const std::string& cmd, const std::string& channel)
+void qb::Bot::queue(const std::string& cmd, const nlohmann::json& data)
 {
     auto contents = qb::parse::split(cmd.substr(6));
-    send(messages::queue_start(contents), channel);
+    // Should be in the format of [time] [choices...]
+    // Order should be irrelevant, assuming time is properly formatted.
+
+    // Write our own parsing logic here, for now
+    // It can be assumed that data is valid and contains what it must
+    const std::string channel = data["channel_id"];
+    const std::string guild = data["guild_id"];
+    if (queues_.find(guild) == queues_.end()) {queues_.emplace_back(guild, {});}
+
+    send(messages::queue_start(contents), data["channel_id"]);
 }
 
 void qb::Bot::store(const std::string& cmd, const std::string& channel)
@@ -191,6 +202,13 @@ void qb::Bot::recall(const std::string& cmd, const std::string& channel)
         else
             send(qb::parse::concatenate(qb::fileio::get_sets(components), ","), channel);
     }
+}
+
+void configure(const std::string& cmd, const nlohmann::json& data)
+{
+    using namespace qb::json_utils;
+    const std::string channel = def(data, "channel_id", std::string{});
+    const std::string guild   = def(data, "guild_id", std::string{});
 }
 
 /*****

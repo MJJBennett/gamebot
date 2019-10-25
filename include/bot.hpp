@@ -5,6 +5,7 @@
 #include <boost/beast/core/flat_buffer.hpp>
 #include <boost/system/error_code.hpp>
 #include <optional>
+#include <unordered_map>
 
 namespace qb
 {
@@ -49,10 +50,12 @@ private:
 private:
     /** Command handlers. **/
     void print(const std::string& cmd, const std::string& channel);
-    void queue(const std::string& cmd, const std::string& channel);
+    void queue(const std::string& cmd, const nlohmann::json& data);
     void store(const std::string& cmd, const std::string& channel);
     void recall(const std::string& cmd, const std::string& channel);
     void list(const std::string& cmd, const std::string& channel);
+
+    void configure(const std::string& cmd, const nlohmann::json& data);
 
 private:
     std::optional<web::WSWrapper> ws_;                 // WebSocket connection
@@ -68,6 +71,8 @@ private:
 
     bool write_incoming_{false}; // Debug - Fully print incoming WebSocket data.
     bool write_outgoing_{false}; // Debug - Fully print outgoing WebSocket data.
+
+    std::unordered_map<std::string, std::vector<nlohmann::json>> queues_; // Our actual queues.
 
 private:
     // Heartbeat data (opcode 1). Sent across WebSocket connection at regular intervals.
