@@ -38,7 +38,7 @@ void web::context::initialize()
     qb::log::point("Connecting to the IP address.");
     beast::get_lowest_layer(stream_).connect(results);
 
-    qb::log::normal("Performing SSL handshake.");
+    qb::log::point("Performing SSL handshake.");
     stream_.handshake(asio::ssl::stream_base::client);
 
     initialized_ = true;
@@ -81,13 +81,13 @@ web::WSWrapper web::context::acquire_websocket(const std::string& psocket_url)
     // These objects perform our I/O
     web::WSWrapper ws(ioc_);
 
-    qb::log::normal("Resolving websocket URL.");
+    qb::log::point("Resolving websocket URL.");
     auto const results = ws.resolver_.resolve(socket_url, qb::strings::port);
 
-    qb::log::normal("Connecting to the IP address using Asio.");
+    qb::log::point("Connecting to the IP address using Asio.");
     asio::connect(ws->next_layer().next_layer(), results.begin(), results.end());
 
-    qb::log::normal("Performing SSL handshake.");
+    qb::log::point("Performing SSL handshake.");
     ws->next_layer().handshake(asio::ssl::stream_base::client);
 
     // Set a decorator to change the User-Agent of the handshake
@@ -96,7 +96,7 @@ web::WSWrapper web::context::acquire_websocket(const std::string& psocket_url)
                 std::string(BOOST_BEAST_VERSION_STRING) + " websocket-client-coro");
     }));
 
-    qb::log::normal("Performing the websocket handshake.");
+    qb::log::point("Performing the websocket handshake.");
     ws->handshake(socket_url, std::string(qb::endpoints::websocket));
 
     return std::move(ws);
@@ -120,7 +120,7 @@ std::string web::endpoint_str(Endpoint ep, const std::string& specifier)
 {
     assert(initialized_);
 
-    qb::log::normal("Creating an HTTP GET request.");
+    qb::log::point("Creating an HTTP GET request.");
     http::request<http::string_body> req{http::verb::get, endpoint_str(ep), qb::http_version};
     req.set(http::field::host, qb::urls::base);
     req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
@@ -134,7 +134,7 @@ std::string web::endpoint_str(Endpoint ep, const std::string& specifier)
     http::response<http::string_body> res; // Holds response
 
     // Step 03.2 - Receive the HTTP response
-    qb::log::normal("Receiving HTTP response.");
+    qb::log::point("Receiving HTTP response.");
     http::read(stream_, buffer, res);
 
     // Step 04 - Translate the response to JSON
