@@ -32,10 +32,10 @@ web::context::context()
 
 void web::context::initialize()
 {
-    qb::log::normal("Looking up host:", qb::urls::base, "at port:", qb::strings::port);
+    qb::log::point("Looking up host: ", qb::urls::base, " at port: ", qb::strings::port);
     const auto results = resolver.resolve(qb::urls::base, qb::strings::port);
 
-    qb::log::normal("Connecting to the IP address.");
+    qb::log::point("Connecting to the IP address.");
     beast::get_lowest_layer(stream_).connect(results);
 
     qb::log::normal("Performing SSL handshake.");
@@ -58,7 +58,7 @@ void web::context::shutdown()
     stream_.shutdown(ec);
     if (ec == asio::error::eof || ec == asio::ssl::error::stream_truncated || ec == asio::error::broken_pipe)
     {
-        qb::log::normal("Ignoring error:", beast::system_error{ec}.what());
+        qb::log::point("Ignoring error: ", beast::system_error{ec}.what());
         ec = {};
     }
     if (ec)
@@ -73,10 +73,10 @@ web::WSWrapper web::context::acquire_websocket(const std::string& psocket_url)
     assert(initialized_);
 
     /** Step 07 - Connect to the socket using websockets and SSL. **/
-    qb::log::normal("Connecting to websocket at URL:", psocket_url, "& port:", qb::strings::port);
-    qb::log::normal("Fixing the URL to remove wss://...");
+    qb::log::point("Connecting to websocket at URL: ", psocket_url, " and port: ", qb::strings::port);
+    qb::log::point("Fixing the URL to remove wss://...");
     const auto socket_url = psocket_url.substr(6);
-    qb::log::normal("Okay, using", socket_url, "instead.");
+    qb::log::point("Okay, using ", socket_url, " instead.");
 
     // These objects perform our I/O
     web::WSWrapper ws(ioc_);
