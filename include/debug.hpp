@@ -91,6 +91,42 @@ void value(const K& name, const V& value)
 {
     normal(">>> The value of ", name, " is ", value);
 }
+
+/** For only logging in the event of an exception. **/
+template <typename S> // S is printable
+class scope
+{
+public:
+    scope() = default;
+    scope(const S& s) : s_(s), should_log_(true)
+    {
+    }
+
+    void operator+=(const S& s)
+    {
+        s_ += s;
+        should_log_ = true;
+    }
+
+    void clear()
+    {
+        s_          = S{};
+        should_log_ = false;
+    }
+
+    ~scope()
+    {
+        if (should_log_)
+        {
+            qb::log::point(s_);
+        }
+    }
+
+private:
+    S s_{};
+    bool should_log_{false};
+};
+
 } // namespace qb::log
 
 #endif // DEBUG_HPP

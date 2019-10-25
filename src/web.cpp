@@ -58,12 +58,12 @@ void web::context::shutdown()
     stream_.shutdown(ec);
     if (ec == asio::error::eof || ec == asio::ssl::error::stream_truncated || ec == asio::error::broken_pipe)
     {
-        qb::log::point("Ignoring error: ", beast::system_error{ec}.what());
+        qb::log::warn("Ignoring error: ", beast::system_error{ec}.what());
         ec = {};
     }
     if (ec)
     {
-        qb::log::point("Encountered error while shutting down web context stream.");
+        qb::log::err("Encountered error while shutting down web context stream.");
         throw beast::system_error{ec};
     }
 }
@@ -120,21 +120,21 @@ std::string web::endpoint_str(Endpoint ep, const std::string& specifier)
 {
     assert(initialized_);
 
-    qb::log::point("Creating an HTTP GET request.");
+    qb::log::scope<std::string> slg("Creating an HTTP GET request...");
     http::request<http::string_body> req{http::verb::get, endpoint_str(ep), qb::http_version};
     req.set(http::field::host, qb::urls::base);
     req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
     req.set(http::field::authorization, "Bot " + qb::detail::get_bot_token());
 
     // Step 03.1 - Send the HTTP request to the remote host
-    qb::log::point("Writing an HTTP request.");
+    slg += " Writing an HTTP request...";
     http::write(stream_, req);
 
     beast::flat_buffer buffer;             // Useful buffer object
     http::response<http::string_body> res; // Holds response
 
     // Step 03.2 - Receive the HTTP response
-    qb::log::point("Receiving HTTP response.");
+    slg += " Receiving HTTP response.";
     http::read(stream_, buffer, res);
 
     // Step 04 - Translate the response to JSON
@@ -145,7 +145,7 @@ nlohmann::json web::context::post(Endpoint ep, const std::string& specifier, con
 {
     assert(initialized_);
 
-    qb::log::point("Creating an HTTP POST request.");
+    qb::log::scope<std::string> slg("[HTTP POST request creation start.]");
     // Set up an HTTP POST request message
     http::request<http::string_body> req{http::verb::post, endpoint_str(ep, specifier), qb::http_version};
     req.set(http::field::host, qb::urls::base);
@@ -155,7 +155,10 @@ nlohmann::json web::context::post(Endpoint ep, const std::string& specifier, con
     req.set(http::field::content_type, "application/json");
     req.set(http::field::content_length, body.size());
     req.prepare_payload();
-    qb::log::data("Sending request...", req);
+    slg += "\nSending the following request:\n";
+    std::stringstream s;
+    s << req;
+    slg += s.str();
 
     // Send the HTTP request to the remote host
     http::write(stream_, req);
@@ -167,16 +170,17 @@ nlohmann::json web::context::post(Endpoint ep, const std::string& specifier, con
     http::response<http::string_body> res;
 
     // Receive the HTTP response
-    qb::log::point("Receiving POST response.");
+    slg += ("\nReceiving POST response.");
     try
     {
         http::read(stream_, buffer, res);
     }
     catch (const std::exception& e)
     {
-        qb::log::err("Received error: ", e.what());
+        qb::log::warn("Got error: ", e.what(), " while reading the response to a POST request.");
         if (!failed_)
         {
+            slg.clear();
             failed_ = true;
             // It's possible our stream has somehow become disconnected
             // Instead of instantly erroring, let's set the fail check,
@@ -187,9 +191,12 @@ nlohmann::json web::context::post(Endpoint ep, const std::string& specifier, con
         }
         else
         {
+            // Request failed twice in a row, could be a network issue.
+            // In the future, this could be a longer timeout.
             throw e;
         }
     }
     failed_ = false;
+    slg.clear();
     return nlohmann::json::parse(res.body());
 }
