@@ -64,6 +64,7 @@ private:
     bool outstanding_write_{false};       // True if an async_write is currently in progress.
     unsigned long long pings_sent_{0};    // Number of heartbeats that have been sent.
     unsigned long long acks_received_{0}; // Number of heartbeat ACKs that have been received.
+    unsigned int failed_ack_searches_{0}; // Number of reads for ACKs that have failed in a row.
 
     bool write_incoming_{false}; // Debug - Fully print incoming WebSocket data.
     bool write_outgoing_{false}; // Debug - Fully print outgoing WebSocket data.

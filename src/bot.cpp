@@ -263,6 +263,11 @@ void qb::Bot::ping_sender(const boost::system::error_code& error)
     if (acks_received_ < pings_sent_)
     {
         qb::log::warn("Got ", acks_received_, " acks & sent ", pings_sent_, " pings. Waiting...");
+        if (failed_ack_searches_++ > 25)
+        {
+            shutdown();
+            return;
+        }
         dispatch_ping_in(2000);
         return;
     }
@@ -319,6 +324,7 @@ void qb::Bot::read_handler(const boost::system::error_code& error, std::size_t b
         // Handle ACK here because it's easy
         qb::log::point("Received ACK.");
         acks_received_ += 1;
+        failed_ack_searches_ = 0;
         break;
     case -1:
         qb::log::err("Could not find opcode in response: ", resp.dump());
