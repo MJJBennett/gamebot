@@ -15,7 +15,7 @@ mkdir output >/dev/null 2>&1
 cd output
 
 # Run makefile generator, with testing enabled
-cmake .. -DCMAKE_CXX_COMPILER=/usr/local/bin/g++ -DCMAKE_C_COMPILER=/usr/local/bin/gcc-8 -DQBTEST=True
+cmake .. -DCMAKE_CXX_COMPILER=/usr/local/bin/g++-9 -DCMAKE_C_COMPILER=/usr/local/bin/gcc-9 -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl -DQBTEST=True
 cmake_success=$?
 
 # Update compile commands
@@ -29,14 +29,14 @@ echo "Fixing compile commands..."
 # Now build tests
 if [ $cmake_success -ne 0 ]; then
     echo "CMake failed, fix errors there first."
-    return
+    exit $cmake_success
 fi
 
 cd output
 make all
 if [ $? -ne 0 ]; then
     echo "Not running tests due to Make failure."
-    return
+    exit $cmake_success
 fi
 
 # Run tests

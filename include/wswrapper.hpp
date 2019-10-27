@@ -26,7 +26,7 @@ public:
 
 private:
     std::unique_ptr<WebSocket> ws_;
-    boost::asio::ssl::context ctx_;
+    boost::asio::ssl::context ssl_ctx_;
     boost::asio::io_context& ioc_;
 };
 

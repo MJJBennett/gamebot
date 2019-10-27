@@ -20,6 +20,7 @@ web::context::context()
 {
     ctx_.set_options(asio::ssl::context::default_workarounds);
     ctx_.set_verify_mode(asio::ssl::verify_peer);
+    ctx_.set_default_verify_paths();
 
     // Set SNI Hostname (many hosts need this to handshake successfully)
     if (!SSL_set_tlsext_host_name(stream_.native_handle(), qb::urls::base.data()))

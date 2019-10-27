@@ -8,7 +8,6 @@ set(JSON_BuildTests OFF CACHE INTERNAL "")
 
 include_directories(include auth)
 include_directories(/usr/local/opt/openssl/include)
-set(OPENSSL_ROOT_DIR /usr/local/opt/openssl/include)
 
 find_package(Boost 1.71 COMPONENTS program_options REQUIRED)
 find_package(OpenSSL REQUIRED)

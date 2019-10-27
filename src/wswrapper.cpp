@@ -28,17 +28,18 @@ web::WSWrapper::~WSWrapper()
 }
 
 web::WSWrapper::WSWrapper(boost::asio::io_context& ioc)
-    : ctx_(boost::asio::ssl::context::tlsv12_client), ioc_(ioc), resolver_(ioc)
+    : ssl_ctx_(boost::asio::ssl::context::sslv23_client), ioc_(ioc), resolver_(ioc)
 {
     qb::log::point("Constructing websocket wrapper.");
-    ctx_.set_options(boost::asio::ssl::context::default_workarounds);
-    ctx_.set_verify_mode(boost::asio::ssl::verify_peer);
+    ssl_ctx_.set_options(boost::asio::ssl::context::default_workarounds);
+    ssl_ctx_.set_verify_mode(boost::asio::ssl::verify_peer);
+    ssl_ctx_.set_default_verify_paths();
     qb::log::point("Constructing inner websocket.");
-    ws_ = std::make_unique<web::WebSocket>(ioc_, ctx_);
+    ws_ = std::make_unique<web::WebSocket>(ioc_, ssl_ctx_);
 }
 
 web::WSWrapper::WSWrapper(web::WSWrapper&& wsw)
-    : ws_{std::move(wsw.ws_)}, ctx_{std::move(wsw.ctx_)}, ioc_(wsw.ioc_), resolver_{std::move(wsw.resolver_)}
+    : ws_{std::move(wsw.ws_)}, ssl_ctx_{std::move(wsw.ssl_ctx_)}, ioc_(wsw.ioc_), resolver_{std::move(wsw.resolver_)}
 {
 }
 

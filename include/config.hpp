@@ -12,7 +12,7 @@ const std::string max_skribble_wordsize_s = "30";
 
 inline json& get_config_()
 {
-    static auto conf_ = json{{"command_start", "!qb "}, {"skribbl_path", "skribbl.json"}};
+    static auto conf_ = json{{"command_start", "!qb "}, {"skribbl_path", "../data/skribbl.json.current"}};
     return conf_;
 }
 
