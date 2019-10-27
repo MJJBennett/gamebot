@@ -29,6 +29,8 @@ web::context::context()
         qb::log::err("Encountered error attempting to set SNI hostname.");
         throw beast::system_error{ec};
     }
+
+    ctx_.set_default_verify_paths();
 }
 
 void web::context::initialize()
@@ -84,6 +86,8 @@ web::WSWrapper web::context::acquire_websocket(const std::string& psocket_url)
 
     qb::log::point("Resolving websocket URL.");
     auto const results = ws.resolver_.resolve(socket_url, qb::strings::port);
+
+    qb::log::point("WebSocket URL: ", socket_url);
 
     qb::log::point("Connecting to the IP address using Asio.");
     asio::connect(ws->next_layer().next_layer(), results.begin(), results.end());

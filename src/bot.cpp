@@ -189,8 +189,8 @@ void qb::Bot::store(const std::string& cmd, const std::string& channel)
 
 void qb::Bot::recall(const std::string& cmd, const std::string& channel)
 {
-    auto cmd_name   = qb::parse::get_command_name(cmd);
-    auto components = qb::parse::split(cmd_name, ':');
+    //auto cmd_name   = qb::parse::get_command_name(cmd);
+    auto components = qb::parse::split(cmd, ' ');
     if (components.size() <= 1 || components[1] == "all")
     {
         qb::log::point("Sending all in recall command.");
