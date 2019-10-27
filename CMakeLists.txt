@@ -11,7 +11,10 @@ include_directories(/usr/local/opt/openssl/include)
 
 find_package(Boost 1.71 COMPONENTS program_options REQUIRED)
 find_package(OpenSSL REQUIRED)
+find_package(Threads)
 add_subdirectory(deps/nlohmann_json)
+
+include_directories(${Boost_INCLUDE_DIR})
 
 add_executable(GameBot
     include/config.hpp
@@ -25,9 +28,10 @@ add_executable(GameBot
     src/bot.cpp include/bot.hpp
     src/main.cpp
 )
+target_link_libraries(GameBot PUBLIC ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(GameBot PRIVATE stdc++fs)
 target_link_libraries(GameBot PUBLIC OpenSSL::SSL)
-target_link_libraries(GameBot PRIVATE Boost::program_options)
+target_link_libraries(GameBot PRIVATE ${Boost_LIBRARIES})
 target_link_libraries(GameBot PRIVATE nlohmann_json::nlohmann_json)
 
 if(DEFINED QBTEST)
