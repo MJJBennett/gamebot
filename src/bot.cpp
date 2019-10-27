@@ -135,8 +135,11 @@ void qb::Bot::queue(const std::string& cmd, const nlohmann::json& data)
     // Write our own parsing logic here, for now
     // It can be assumed that data is valid and contains what it must
     const std::string channel = data["channel_id"];
-    const std::string guild = data["guild_id"];
-    if (queues_.find(guild) == queues_.end()) {queues_.emplace_back(guild, {});}
+    const std::string guild   = data["guild_id"];
+    if (queues_.find(guild) == queues_.end())
+    {
+        queues_.emplace(guild, std::vector<nlohmann::json>{});
+    }
 
     send(messages::queue_start(contents), data["channel_id"]);
 }
@@ -204,7 +207,7 @@ void qb::Bot::recall(const std::string& cmd, const std::string& channel)
     }
 }
 
-void configure(const std::string& cmd, const nlohmann::json& data)
+void qb::Bot::configure(const std::string& cmd, const nlohmann::json& data)
 {
     using namespace qb::json_utils;
     const std::string channel = def(data, "channel_id", std::string{});
