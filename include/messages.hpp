@@ -14,6 +14,12 @@ inline std::string queue_start(const std::vector<std::string>& cmd)
     return "Queuing for games: " + qb::parse::concatenate_quoted(cmd) + "! Reacting does nothing!";
 }
 
+inline std::string queue_needs_time()
+{
+    return "Cannot start a queue without a timeout, e.g. 3m or 4m44s or 5h. That last one is "
+           "inadvisable. Don't ask why.";
+}
+
 inline std::string cannot_store(const std::vector<std::string>& ignored)
 {
     return "Error: Cannot store more than " + qb::config::max_skribble_wordsize_s +

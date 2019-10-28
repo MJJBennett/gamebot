@@ -49,3 +49,18 @@ TEST(Parse, split_2)
 
     EXPECT_EQ(concatenate(split(get_command_name(a), ':')), concatenate(a_ans));
 }
+
+TEST(Parse, get_time)
+{
+    std::vector<std::string> set_1{"0m4s5h3s500s333h", "something", "something else"};
+    auto [time1, others1] = get_time(set_1);
+
+    EXPECT_EQ(time1, "0m4s5h3s500s333h");
+    EXPECT_EQ(others1.size(), 2);
+
+    std::vector<std::string> set_2{"something", "5m", "something else"};
+    auto [time2, others2] = get_time(set_2);
+
+    EXPECT_EQ(time2, "5m");
+    EXPECT_EQ(others2.size(), 2);
+}

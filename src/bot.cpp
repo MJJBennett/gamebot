@@ -128,14 +128,23 @@ void qb::Bot::list(const std::string& cmd, const std::string& channel)
 
 void qb::Bot::queue(const std::string& cmd, const nlohmann::json& data)
 {
-    auto contents = qb::parse::split(cmd.substr(6));
+    const std::string channel = data["channel_id"];
+    const std::string guild   = data["guild_id"];
+
+    using namespace qb::parse;
+    auto contents = split(cmd.substr(6));
+
     // Should be in the format of [time] [choices...]
     // Order should be irrelevant, assuming time is properly formatted.
+    auto [time, games] = get_time(contents);
+
+    if (time == "")
+    {
+        send(qb::messages::queue_needs_time(), channel);
+    }
 
     // Write our own parsing logic here, for now
     // It can be assumed that data is valid and contains what it must
-    const std::string channel = data["channel_id"];
-    const std::string guild   = data["guild_id"];
     if (queues_.find(guild) == queues_.end())
     {
         queues_.emplace(guild, std::vector<nlohmann::json>{});

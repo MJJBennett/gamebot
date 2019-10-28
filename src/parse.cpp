@@ -54,6 +54,125 @@ bool qb::parse::startswithword(const std::string& str, const std::string& start)
            ((start.size() < str.size()) && !isalpha(str[start.size()]) && str.substr(0, start.size()) == start);
 }
 
+std::tuple<std::string, std::vector<std::string>> qb::parse::get_time(std::vector<std::string> to_search)
+{
+    std::vector<std::string> not_matches;
+    std::string found{""};
+    bool was_found{false};
+
+    auto is_time = [](char c) {
+        return (isalpha(c) && (tolower(c) == 'm' || tolower(c) == 's' || tolower(c) == 'h'));
+    };
+
+    for (auto&& item : to_search)
+    {
+        if (!was_found && item.size() > 1)
+        {
+            size_t pos = 0;
+            while (true)
+            {
+                if (!isdigit(item[pos])) break;
+                // consume numbers
+                while (pos < item.size() && isdigit(item[pos]))
+                    pos++;
+                // consume a time
+                if (pos == item.size() || !is_time(item[pos])) break;
+                pos++;
+                if (pos == item.size())
+                {
+                    was_found = true;
+                    found     = std::move(item);
+                    goto cont;
+                }
+            }
+        }
+        not_matches.emplace_back(std::move(item));
+    cont:;
+    }
+
+    return {found, not_matches};
+}
+
+std::tuple<std::string, std::vector<std::string>> qb::parse::match(std::string expr,
+                                                                   std::vector<std::string> to_search)
+{
+    // This is my extremely quick and dirty expression matcher
+    // Our goal is to find a single instance that matches expr within to_search
+    // Then return that, plus everything else from to_search that wasn't found
+    // This is not particularly efficient, but this function is being implemented with the
+    // express purpose of not being run very frequently, and it's more fun to do it this way
+    // than to just use a library implementation, so we're doing that.
+    // Alternatively a full expression parser could be here but I think that's probably overkill.
+    std::vector<std::string> not_matches;
+    std::string found{""};
+    bool was_found{false};
+
+    for (auto&& item : to_search)
+    {
+        if (!was_found && match(expr, item))
+        {
+            was_found = true;
+            found     = std::move(item);
+            continue;
+        }
+        not_matches.emplace_back(std::move(item));
+    }
+
+    return {found, not_matches};
+}
+
+bool qb::parse::match(std::string expr, std::string to_match)
+{
+    // This doesn't really work or do anything but I don't have the heart to delete it
+    const size_t expr_end = expr.size();
+    size_t pos            = 0;
+    auto is_time          = [](char c) {
+        return (isalpha(c) && (tolower(c) == 'm' || tolower(c) == 's' || tolower(c) == 'h'));
+    };
+    auto is_char = [&](char expr_c, char act_c) -> bool {
+        if (expr_c == 'N') return isdigit(act_c);
+        if (expr_c == 'C') return isalpha(act_c);
+        if (expr_c == 'T') return is_time(act_c);
+        return false;
+    };
+    std::optional<std::string> group;
+    while (pos < expr_end)
+    {
+        if (expr[pos] == '[') // start a group
+        {
+            assert(!group);
+            group.emplace();
+            pos++;
+            // now consume group expression
+            while (expr[pos] != ']')
+            {
+                (*group) += expr[pos];
+                pos++;
+                assert(pos != expr_end);
+            }
+            pos++;
+            bool repeat = (pos != expr_end && expr[pos] == '+');
+            do
+            {
+                // consume the thing!
+                size_t g_pos{0};
+                for (int i = 0; i < to_match.size(); i++)
+                {
+                    if (is_char((*group)[g_pos], to_match[i]))
+                    // we matched a character, nice
+                    {
+                        // see if that repeats and we can consume more
+                        if (g_pos != group->size() && (*group)[g_pos] == '+')
+                        {
+                        }
+                    }
+                }
+            } while (repeat);
+        }
+    }
+    return false;
+}
+
 bool qb::parse::is_command(std::string str)
 {
     return startswith(trim_leading_ignored(str), config::cmd_start());

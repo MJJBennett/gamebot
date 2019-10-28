@@ -2,6 +2,7 @@
 #define PARSE_HPP
 
 #include <string>
+#include <tuple>
 #include <vector>
 
 namespace qb::parse
@@ -34,6 +35,10 @@ inline bool startswith(const std::string& str, const std::string& start)
 
 /** Returns whether the first input string starts with the second followed by a non-alphanumeric character. **/
 bool startswithword(const std::string& str, const std::string& start);
+
+std::tuple<std::string, std::vector<std::string>> get_time(std::vector<std::string>);
+std::tuple<std::string, std::vector<std::string>> match(std::string, std::vector<std::string>);
+bool match(std::string, std::string);
 
 template <typename Type, typename Range>
 bool in(Type t, Range range)
