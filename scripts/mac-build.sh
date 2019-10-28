@@ -4,7 +4,7 @@
 script_dir=$(dirname "$0")
 
 # Move to that directory so we can reliably move to the correct build directory
-cd $script_dir
+cd $script_dir/..
 
 # Make and move to the output directory, ignore errors
 mkdir output >/dev/null 2>&1
@@ -16,4 +16,4 @@ cmake .. -DCMAKE_CXX_COMPILER=/usr/local/bin/g++-9 -DCMAKE_C_COMPILER=/usr/local
 cp compile_commands.json ..
 cd ..
 echo "Fixing compile commands..."
-./fix-compile-commands.py include src auth
+./scripts/fix-compile-commands.py include src auth

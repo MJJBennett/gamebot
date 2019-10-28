@@ -4,7 +4,7 @@
 script_dir=$(dirname "$0")
 
 # Move to that directory so we can reliably move to the correct build directory
-cd $script_dir
+cd $script_dir/..
 
 # Skribbl testing - we need to set up our test JSON data
 # cp "test/test_skribbl.json" "test/test_skribbl.noedit.json"
@@ -23,7 +23,7 @@ cmake_success=$?
 cp compile_commands.json ..
 cd ..
 echo "Fixing compile commands..."
-./fix-compile-commands.py include src auth test
+./scripts/fix-compile-commands.py include src auth test
 #########################
 
 # Now build tests

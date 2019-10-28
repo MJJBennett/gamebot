@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 import json
+import os
 
-with open("output/skribbl.json", "r") as f:
+p = os.path.join(os.path.dirname(os.path.realpath(__file__)), "output/skribbl.json")
+
+with open(p, "r") as f:
     x = json.load(f)
 
 string = ""
