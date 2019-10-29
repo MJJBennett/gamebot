@@ -20,6 +20,9 @@ void add_to_set(const std::string& set, const std::vector<std::string>&);
 std::vector<std::string> get_all();
 std::vector<std::string> get_set(const std::string& set);
 std::vector<std::string> get_sets(const std::vector<std::string>& sets);
+
+void register_emote(std::string name, std::string emote);
+std::string get_emote(std::string name);
 } // namespace qb::fileio
 
 #endif // FILE_IO

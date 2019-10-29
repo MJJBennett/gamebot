@@ -14,7 +14,8 @@ inline json& get_config_()
 {
     static auto conf_ = json{{"command_start", "!qb "},
                              {"skribbl_path", "../data/skribbl.json.current"},
-                             {"emote_path", "../data/emote.kvs"}};
+                             {"emote_path", "../data/emote.kvs"},
+                             {"default_emote", ""}};
     return conf_;
 }
 
@@ -31,6 +32,11 @@ inline std::string skribbl_data_file()
 inline std::string emote_data_file()
 {
     return get_config_()["emote_path"];
+}
+
+inline std::string default_emote()
+{
+    return get_config_()["default_emote"];
 }
 
 } // namespace qb::config

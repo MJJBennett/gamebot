@@ -87,6 +87,8 @@ void qb::Bot::handle_event(const json& payload)
                 recall(cmd, channel);
             else if (startswith(cmd, "conf"))
                 configure(cmd, payload["d"]);
+            else if (startswithword(cmd, "assign"))
+                assign_emote(cmd, channel);
         }
     }
     else if (et == "READY")
@@ -198,7 +200,7 @@ void qb::Bot::store(const std::string& cmd, const std::string& channel)
 
 void qb::Bot::recall(const std::string& cmd, const std::string& channel)
 {
-    //auto cmd_name   = qb::parse::get_command_name(cmd);
+    // auto cmd_name   = qb::parse::get_command_name(cmd);
     auto components = qb::parse::split(cmd, ' ');
     if (components.size() <= 1 || components[1] == "all")
     {
@@ -221,6 +223,20 @@ void qb::Bot::configure(const std::string& cmd, const nlohmann::json& data)
     using namespace qb::json_utils;
     const std::string channel = def(data, "channel_id", std::string{});
     const std::string guild   = def(data, "guild_id", std::string{});
+}
+
+void qb::Bot::assign_emote(const std::string& cmd, const std::string& channel)
+{
+    using namespace qb::fileio;
+
+    auto parsed = qb::parse::split(cmd);
+    if (parsed.size() != 3)
+    {
+        send("Arguments to assign must be a single word followed by an emote.", channel);
+        return;
+    }
+    register_emote(parsed.at(1), parsed.at(2));
+    send("Success! Name " + parsed.at(1) + " registered to emote " + get_emote(parsed.at(1)) + " !", channel);
 }
 
 /*****

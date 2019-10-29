@@ -1,9 +1,16 @@
 #include "fileio.hpp"
 
 #include "config.hpp"
+#include "debug.hpp"
 #include "json_utils.hpp"
+#include "parse.hpp"
 #include <filesystem>
 #include <fstream>
+#include <unordered_map>
+
+class emote_cache;
+void invalidate_emote_cache();
+emote_cache& get_emote_cache();
 
 bool qb::fileio::skribbl::storage_exists()
 {
@@ -109,4 +116,67 @@ std::vector<std::string> qb::fileio::get_sets(const std::vector<std::string>& se
         }
     }
     return names;
+}
+
+void qb::fileio::register_emote(std::string name, std::string emote)
+{
+    // Open and store in our very simple Key/Value store
+    std::ofstream os(qb::config::emote_data_file(), std::ios_base::app | std::ios_base::out);
+
+    os << qb::parse::trim(name) << "=" << qb::parse::trim(emote) << '\n';
+    invalidate_emote_cache();
+}
+
+struct emote_cache
+{
+    bool valid{false};
+    std::string at(const std::string lookup)
+    {
+        if (!valid) reload();
+        if (auto it = emote_map.find(lookup); it != emote_map.end()) return it->second;
+        return qb::config::default_emote();
+    }
+
+    void reload()
+    {
+        std::ifstream is(qb::config::emote_data_file());
+        if (!is)
+        {
+            // Couldn't open, assume the file doesn't exist yet.
+            return;
+        }
+        std::string emote_mapping;
+        size_t line = 0;
+        while (getline(is, emote_mapping))
+        {
+            line++;
+            auto it = std::find(emote_mapping.begin(), emote_mapping.end(), '=');
+            if (it == emote_mapping.end() || it + 1 == emote_mapping.end())
+            {
+                qb::log::warn("Invalid emote mapping found while reloading at line ", line, ": ", emote_mapping);
+                continue;
+            }
+            emote_map.emplace(std::string{emote_mapping.begin(), it},
+                              std::string{it + 1, emote_mapping.end()});
+        }
+    }
+
+private:
+    std::unordered_map<std::string, std::string> emote_map;
+};
+
+std::string qb::fileio::get_emote(std::string name)
+{
+    return get_emote_cache().at(name);
+}
+
+emote_cache& get_emote_cache()
+{
+    static emote_cache ec;
+    return ec;
+}
+
+void invalidate_emote_cache()
+{
+    get_emote_cache().valid = false;
 }

@@ -56,6 +56,7 @@ private:
     void list(const std::string& cmd, const std::string& channel);
 
     void configure(const std::string& cmd, const nlohmann::json& data);
+    void assign_emote(const std::string& cmd, const std::string& channel);
 
 private:
     std::optional<web::WSWrapper> ws_;                 // WebSocket connection
