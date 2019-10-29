@@ -2,6 +2,7 @@
 #define UTILS_HPP
 #include <string>
 
+
 namespace qb::detail
 {
 std::string get_bot_token();
@@ -27,6 +28,9 @@ bool range_eq(const R& r, const R& r2)
     }
     return true;
 }
+
+// Case-insensitive string compare
+bool iequals(const std::string& a, const std::string& b);
 
 } // namespace qb
 

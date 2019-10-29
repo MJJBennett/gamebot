@@ -12,9 +12,10 @@ add_subdirectory(${GOOGLETEST_DIR}
                  ${PROJECT_BINARY_DIR}/gtest
                  EXCLUDE_FROM_ALL)
 
-add_executable(QueueBotTests Test_Parse.cpp Test_FileIO.cpp
+add_executable(QueueBotTests Test_Parse.cpp Test_FileIO.cpp Test_Utils.cpp
     ${CMAKE_SOURCE_DIR}/src/parse.cpp
     ${CMAKE_SOURCE_DIR}/src/fileio.cpp
+    ${CMAKE_SOURCE_DIR}/src/utils.cpp
 )
 target_include_directories(QueueBotTests PRIVATE "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>")
 target_include_directories(QueueBotTests PRIVATE "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/deps/nlohmann_json/single_include>")
