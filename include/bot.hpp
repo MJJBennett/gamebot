@@ -1,6 +1,7 @@
 #ifndef BOT_HPP
 #define BOT_HPP
 
+#include "queue.hpp"
 #include "web.hpp"
 #include <boost/beast/core/flat_buffer.hpp>
 #include <boost/system/error_code.hpp>
@@ -59,6 +60,9 @@ private:
     void assign_emote(const std::string& cmd, const std::string& channel);
 
 private:
+    void handle_queue_timeout(const std::string& message_id, const boost::system::error_code& error);
+
+private:
     std::optional<web::WSWrapper> ws_;                 // WebSocket connection
     boost::beast::flat_buffer buffer_;                 // Persistent read buffer
     std::optional<boost::asio::steady_timer> timer_{}; // Persistent write timer
@@ -72,8 +76,9 @@ private:
 
     bool write_incoming_{false}; // Debug - Fully print incoming WebSocket data.
     bool write_outgoing_{false}; // Debug - Fully print outgoing WebSocket data.
+    bool log_loud_{false};       // Debug - For lack of a better setup, this prints more.
 
-    std::unordered_map<std::string, std::vector<nlohmann::json>> queues_; // Our actual queues.
+    std::unordered_map<std::string, qb::queue> queues_; // Our actual queues.
 
 private:
     // Heartbeat data (opcode 1). Sent across WebSocket connection at regular intervals.

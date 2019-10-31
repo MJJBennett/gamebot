@@ -54,7 +54,7 @@ void qb::Bot::handle_event(const json& payload)
     const auto et = j::def(payload, "t", std::string{"ERR"});
     if (et == "MESSAGE_CREATE")
     {
-        qb::log::point("A message was created.");
+        if (log_loud_) qb::log::point("A message was created.");
         // qb::log::data("Message", payload.dump(2));
 
         // New Message!
@@ -83,6 +83,10 @@ void qb::Bot::handle_event(const json& payload)
                 write_incoming_ = true;
             else if (startswithword(cmd, "db:nowriteincoming"))
                 write_incoming_ = false;
+            else if (startswithword(cmd, "db:loud"))
+                log_loud_ = true;
+            else if (startswithword(cmd, "db:noloud"))
+                log_loud_ = false;
             else if (startswithword(cmd, "recall"))
                 recall(cmd, channel);
             else if (startswith(cmd, "conf"))
@@ -132,27 +136,115 @@ void qb::Bot::queue(const std::string& cmd, const nlohmann::json& data)
 {
     const std::string channel = data["channel_id"];
     const std::string guild   = data["guild_id"];
+    const std::string msg_id  = data["id"];
 
     using namespace qb::parse;
     auto contents = split(cmd.substr(6));
 
+    /*
     // Should be in the format of [time] [choices...]
     // Order should be irrelevant, assuming time is properly formatted.
     auto [time, games] = get_time(contents);
 
     if (time == "")
     {
-        send(qb::messages::queue_needs_time(), channel);
+    //    send(qb::messages::queue_needs_time(), channel);
+    }*/
+
+    // Functionality before abstraction
+    // !qb queue Activity [Max Participants | Timeout]
+
+    if (contents.size() != 2)
+    {
+        send(
+            "Current format for queue is: queue [Activity] [Time | Max Participants] (e.g. queue "
+            "Soccer 3m or queue Chess 2)",
+            channel);
+        return;
     }
 
+    int param = 0;
+    bool time = false;
+    try
+    {
+        size_t p{0};
+        param = stoi(contents.at(1), &p);
+
+        if (p != contents.at(1).size())
+        {
+            time = true;
+        }
+    }
+    catch (const std::invalid_argument&)
+    {
+        send(
+            "Current format for queue is: queue [Activity] [Time | Max Participants] (e.g. queue "
+            "Soccer 3m or queue Chess 2)",
+            channel);
+        return;
+    }
+
+    if (time)
+        qb::log::point("Starting time queue with value of ", param);
+    else
+        qb::log::point("Starting person queue with value of ", param);
+
+    if (time)
+    {
+        auto [it, b] = queues_.emplace(std::piecewise_construct, std::make_tuple(msg_id),
+                                       std::make_tuple(guild, channel, param, web_ctx_->ioc_ptr()));
+        if (!b)
+        {
+            send("Something failed when creating the queue. Please try again!", channel);
+        }
+        it->second.async_wait(std::bind(&qb::Bot::handle_queue_timeout, this, msg_id, std::placeholders::_1),
+                              std::chrono::minutes(param));
+    }
+    else
+    {
+        auto [it, b] = queues_.emplace(std::piecewise_construct, std::make_tuple(msg_id),
+                                       std::make_tuple(guild, channel, param));
+        if (!b)
+        {
+            send("Something failed when creating the queue. Please try again!", channel);
+        }
+    }
+
+    /*
     // Write our own parsing logic here, for now
     // It can be assumed that data is valid and contains what it must
     if (queues_.find(guild) == queues_.end())
     {
         queues_.emplace(guild, std::vector<nlohmann::json>{});
+    }*/
+
+    // send(messages::queue_start(contents), channel);
+    send("Queuing for " + contents.at(0) + "! Respond to this message with " +
+             qb::fileio::get_emote("yes") + " to join the queue, " +
+             qb::fileio::get_emote("maybe") + " to indicate a 'maybe', or " +
+             qb::fileio::get_emote("no") + " to indicate a definite no.",
+         channel);
+}
+
+void qb::Bot::handle_queue_timeout(const std::string& message_id, const boost::system::error_code& error)
+{
+    qb::log::point("Handling queue timeout for message id ", message_id);
+    if (error)
+    {
+        qb::log::err(error.message());
+        return;
     }
 
-    send(messages::queue_start(contents), data["channel_id"]);
+    if (auto it = queues_.find(message_id); it != queues_.end())
+    {
+        std::string channel = std::move(it->second.channel_id_);
+        queues_.erase(it);
+        send("Queue is complete!", channel);
+    }
+    else
+    {
+        qb::log::warn("Could not find that message ID in the map.");
+    }
 }
 
 void qb::Bot::store(const std::string& cmd, const std::string& channel)
@@ -319,7 +411,7 @@ void qb::Bot::ping_sender(const boost::system::error_code& error)
     }
 
     // Send a ping
-    qb::log::point("Sending ping.");
+    if (log_loud_) qb::log::point("Sending ping.");
     dispatch_write(heartbeat_msg_);
     pings_sent_ += 1;
     dispatch_ping_in(hb_interval_ms_);
@@ -328,7 +420,8 @@ void qb::Bot::ping_sender(const boost::system::error_code& error)
 void qb::Bot::write_complete_handler(const boost::system::error_code& error, std::size_t bytes_transferred)
 {
     // Our most recent write is now complete. That's great!
-    qb::log::point("Completed a write with ", bytes_transferred, " bytes transferred.");
+    if (log_loud_)
+        qb::log::point("Completed a write with ", bytes_transferred, " bytes transferred.");
     if (error)
     {
         qb::log::err(error.message(), '|', error.category().name(), ':', error.value());
@@ -338,7 +431,7 @@ void qb::Bot::write_complete_handler(const boost::system::error_code& error, std
 
 void qb::Bot::read_handler(const boost::system::error_code& error, std::size_t bytes_transferred)
 {
-    qb::log::point("Parsing received data. Bytes transferred: ", bytes_transferred);
+    if (log_loud_) qb::log::point("Parsing received data. Bytes transferred: ", bytes_transferred);
     if (error)
     {
         qb::log::err(error.message(), " (", error.category().name(), ':', error.value(), ')');
@@ -368,7 +461,7 @@ void qb::Bot::read_handler(const boost::system::error_code& error, std::size_t b
         break;
     case 11:
         // Handle ACK here because it's easy
-        qb::log::point("Received ACK.");
+        if (log_loud_) qb::log::point("Received ACK.");
         acks_received_ += 1;
         failed_ack_searches_ = 0;
         break;
@@ -381,7 +474,7 @@ void qb::Bot::read_handler(const boost::system::error_code& error, std::size_t b
     }
 
     // We must always recursively continue to read more data.
-    qb::log::point("Dispatching new read.");
+    if (log_loud_) qb::log::point("Dispatching new read.");
     dispatch_read();
 }
 
