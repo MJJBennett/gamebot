@@ -11,6 +11,7 @@
 #include <boost/beast/websocket.hpp>
 #include <boost/beast/websocket/ssl.hpp>
 #include <boost/thread.hpp>
+#include <thread>
 
 namespace beast     = boost::beast;
 namespace http      = beast::http;
@@ -214,7 +215,7 @@ nlohmann::json web::context::post(Endpoint ep, const std::string& specifier, con
     if (ratelimit_remaining == 0)
     {
         qb::log::warn("Hit ratelimit! Self ratelimiting...");
-        boost::this_thread::sleep(std::chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::seconds(1));
         qb::log::point("Finished self ratelimiting.");
     }
 
