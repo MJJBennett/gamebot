@@ -191,6 +191,7 @@ nlohmann::json web::context::post(Endpoint ep, const std::string& specifier, con
             // Instead of instantly erroring, let's set the fail check,
             // reinitialize and try again.
             shutdown();
+            stream_ = boost::beast::ssl_stream<boost::beast::tcp_stream>{ioc_, ctx_};
             initialize();
             return post(ep, specifier, body);
         }
@@ -203,5 +204,10 @@ nlohmann::json web::context::post(Endpoint ep, const std::string& specifier, con
     }
     failed_ = false;
     slg.clear();
+
+    // We need to do some debugging on the actual headers, so:
+    //for (auto const& field : res) qb::log::point("field: ", field.name(), " | value: ", field.value());
+    // okay, this doesn't work the way I hoped it would
+    
     return nlohmann::json::parse(res.body());
 }
