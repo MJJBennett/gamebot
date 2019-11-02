@@ -10,6 +10,7 @@
 #include <boost/beast/version.hpp>
 #include <boost/beast/websocket.hpp>
 #include <boost/beast/websocket/ssl.hpp>
+#include <boost/thread.hpp>
 
 namespace beast     = boost::beast;
 namespace http      = beast::http;
@@ -205,9 +206,17 @@ nlohmann::json web::context::post(Endpoint ep, const std::string& specifier, con
     failed_ = false;
     slg.clear();
 
-    // We need to do some debugging on the actual headers, so:
-    //for (auto const& field : res) qb::log::point("field: ", field.name(), " | value: ", field.value());
-    // okay, this doesn't work the way I hoped it would
-    
+    // for (auto const& field : res) qb::log::point("field: ", field.name_string(), " | value: ", field.value());
+
+    // The relevant field is: X-RateLimit-Remaining
+    qb::log::point("Ratelimit remaining: ", res["X-RateLimit-Remaining"]);
+    const auto ratelimit_remaining = std::stoi(std::string(res["X-RateLimit-Remaining"]));
+    if (ratelimit_remaining == 0)
+    {
+        qb::log::warn("Hit ratelimit! Self ratelimiting...");
+        boost::this_thread::sleep(std::chrono::seconds(1));
+        qb::log::point("Finished self ratelimiting.");
+    }
+
     return nlohmann::json::parse(res.body());
 }
