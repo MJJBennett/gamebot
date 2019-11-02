@@ -118,7 +118,7 @@ void qb::Bot::send(std::string msg, std::string channel)
     }
     json msg_json{{"content", msg}};
     const auto resp = web_ctx_->post(web::Endpoint::channels, channel, msg_json.dump());
-    qb::log::data("Response", resp.dump(2));
+    if (log_loud_) qb::log::data("Response", resp.dump(2));
 }
 
 /*****
