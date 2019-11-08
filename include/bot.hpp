@@ -86,17 +86,23 @@ private:
 private:
     void handle_queue_timeout(const std::string& message_id, const boost::system::error_code& error);
 
+    bool is_identity(const nlohmann::json& data);
+
 private:
     std::optional<web::WSWrapper> ws_;                 // WebSocket connection
     boost::beast::flat_buffer buffer_;                 // Persistent read buffer
     std::optional<boost::asio::steady_timer> timer_{}; // Persistent write timer
     web::context* web_ctx_{nullptr};                   // Provides HTTP operations
 
+    std::optional<std::string> identity_;
+
     unsigned int hb_interval_ms_{0};      // Interval between heartbeats.
     bool outstanding_write_{false};       // True if an async_write is currently in progress.
     unsigned long long pings_sent_{0};    // Number of heartbeats that have been sent.
     unsigned long long acks_received_{0}; // Number of heartbeat ACKs that have been received.
     unsigned int failed_ack_searches_{0}; // Number of reads for ACKs that have failed in a row.
+
+    bool mode_1984_{false}; // WIP/TODO - Sentiment analysis/positive (re)enforcement.
 
     bool write_incoming_{false}; // Debug - Fully print incoming WebSocket data.
     bool write_outgoing_{false}; // Debug - Fully print outgoing WebSocket data.

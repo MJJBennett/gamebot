@@ -5,6 +5,7 @@
 #include "json_utils.hpp"
 #include "messages.hpp"
 #include "parse.hpp" // For command parsing
+#include "sentiment.hpp"
 #include "utils.hpp" // For get_bot_token
 #include "web.hpp"
 #include <algorithm>
@@ -57,6 +58,12 @@ void qb::Bot::handle_event(const json& payload)
         if (log_loud_) qb::log::point("A message was created.");
         // qb::log::data("Message", payload.dump(2));
 
+        if (is_identity(payload))
+        {
+            qb::log::point("Ignoring self message create.");
+            return;
+        }
+
         // New Message!
         const auto contents = payload["d"]["content"];
         if (qb::parse::is_command(contents))
@@ -100,6 +107,16 @@ void qb::Bot::handle_event(const json& payload)
             else if (startswithword(cmd, "letter"))
                 letter_hangman(cmd, channel);
         }
+        else if (mode_1984_)
+        {
+            if (qb::sentiment::is_negative(contents))
+            {
+                send("Warning: The message `" + std::string{contents} +
+                         "` is overly negative. You may be required to report for psychological "
+                         "evaluation at later date.",
+                     payload["d"]["channel_id"]);
+            }
+        }
     }
     else if (et == "READY")
     {
@@ -118,7 +135,26 @@ void qb::Bot::send(std::string msg, std::string channel)
     }
     json msg_json{{"content", msg}};
     const auto resp = web_ctx_->post(web::Endpoint::channels, channel, msg_json.dump());
+    if (!identity_)
+    {
+        identity_ = resp["author"]["id"];
+        qb::log::point("Setting identity to: ", *identity_);
+    }
     if (log_loud_) qb::log::data("Response", resp.dump(2));
+}
+
+bool qb::Bot::is_identity(const nlohmann::json& msg)
+{
+    if (!identity_) return false;
+    try
+    {
+        return msg["d"]["author"]["id"] == *identity_;
+    }
+    catch (const std::exception& e)
+    {
+        qb::log::err("Caught some error ", e.what());
+    }
+    return false;
 }
 
 /*****
@@ -321,6 +357,15 @@ void qb::Bot::configure(const std::string& cmd, const nlohmann::json& data)
     using namespace qb::json_utils;
     const std::string channel = def(data, "channel_id", std::string{});
     const std::string guild   = def(data, "guild_id", std::string{});
+
+    if (cmd.size() == 4) return;
+    const auto command = cmd.substr(5);
+
+    if (command == "1984")
+    {
+        mode_1984_ = true;
+        send("Enabling 1985 mode.", channel);
+    }
 }
 
 void qb::Bot::assign_emote(const std::string& cmd, const std::string& channel)
@@ -602,7 +647,7 @@ void qb::Bot::letter_hangman(const std::string& cmd, const std::string& channel)
         return;
     }
     const auto guess = qb::parse::trim(std::string(std::find(cmd.begin(), cmd.end(), ' '), cmd.end()));
-    auto letters = qb::parse::concatenate(qb::parse::split(guess), "");
+    auto letters     = qb::parse::concatenate(qb::parse::split(guess), "");
     std::transform(letters.begin(), letters.end(), letters.begin(), tolower);
     hangman_inst_->guessed_letters_ += letters;
     send("[Hangman] " + hangman_inst_->str(), channel);

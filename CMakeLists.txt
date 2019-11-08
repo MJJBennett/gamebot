@@ -22,6 +22,7 @@ add_executable(GameBot
     src/messages.cpp include/messages.hpp
     src/parse.cpp include/parse.hpp
     src/utils.cpp include/utils.hpp
+    src/sentiment.cpp include/sentiment.hpp
     src/queue.cpp include/queue.hpp
     include/debug.hpp
     src/wswrapper.cpp include/wswrapper.hpp
