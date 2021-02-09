@@ -510,6 +510,9 @@ void qb::Bot::read_handler(const boost::system::error_code& error, std::size_t b
     case 0:
         handle_event(resp);
         break;
+    case 7:
+        qb::log::err("Received opcode 7: Reconnect. Not implemented! Fix this.");
+        break;
     case 11:
         // Handle ACK here because it's easy
         if (log_loud_) qb::log::point("Received ACK.");
