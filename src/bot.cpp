@@ -636,7 +636,7 @@ void qb::Bot::run_hangman(const std::string& cmd, const std::string& channel)
     auto word = *qb::select_randomly(words.begin(), words.end());
     std::transform(word.begin(), word.end(), word.begin(), tolower);
     hangman_inst_.emplace(word);
-    send("[Hangman] " + hangman_inst_->str(), channel);
+    send("[Hangman] `" + hangman_inst_->str() + "`", channel);
 }
 
 void qb::Bot::letter_hangman(const std::string& cmd, const std::string& channel)
@@ -650,5 +650,5 @@ void qb::Bot::letter_hangman(const std::string& cmd, const std::string& channel)
     auto letters     = qb::parse::concatenate(qb::parse::split(guess), "");
     std::transform(letters.begin(), letters.end(), letters.begin(), tolower);
     hangman_inst_->guessed_letters_ += letters;
-    send("[Hangman] " + hangman_inst_->str(), channel);
+    send("[Hangman] `" + hangman_inst_->str() + "`", channel);
 }
