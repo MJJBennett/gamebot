@@ -10,10 +10,16 @@ cd $script_dir/..
 mkdir output >/dev/null 2>&1
 cd output
 
-cmake .. -DCMAKE_CXX_COMPILER=/usr/local/bin/g++-9 -DCMAKE_C_COMPILER=/usr/local/bin/gcc-9 -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl
-# rm ../compile_commands.json
-# ln -s compile_commands.json ../compile_commands.json
+# We need OpenSSL to run this.
+echo "Running cmake:"
+cmake .. -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl
+
+echo "Building the project:"
+make
+
+echo "Saving compile commands:"
 cp compile_commands.json ..
+
+echo "Fixing compile commands:"
 cd ..
-echo "Fixing compile commands..."
 ./scripts/fix-compile-commands.py include src auth

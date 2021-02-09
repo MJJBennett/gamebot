@@ -160,7 +160,7 @@ nlohmann::json web::context::post(Endpoint ep, const std::string& specifier, con
     req.set(http::field::authorization, "Bot " + qb::detail::get_bot_token());
     req.body() = body;
     req.set(http::field::content_type, "application/json");
-    req.set(http::field::content_length, body.size());
+    req.set(http::field::content_length, std::to_string(body.size()));
     req.prepare_payload();
     slg += "\nSending the following request:\n";
     std::stringstream s;
