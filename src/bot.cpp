@@ -118,6 +118,10 @@ void qb::Bot::handle_event(const json& payload)
             }
         }
     }
+    else if ( et == "INTERACTION_CREATE")
+    {
+        qb::log::point("wow, a slash command was used!");
+    }
     else if (et == "READY")
     {
         qb::log::point("A ready payload was sent.");
