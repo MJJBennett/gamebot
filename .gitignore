@@ -6,5 +6,5 @@ output
 *.swp
 token.txt
 __pycache__/
-.vscode
+.vscode/
 src/ex-bot.cpp
