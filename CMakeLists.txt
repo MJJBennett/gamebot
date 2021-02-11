@@ -44,6 +44,7 @@ target_link_libraries(GameBot PRIVATE ${Boost_LIBRARIES})
 target_link_libraries(GameBot PRIVATE nlohmann_json::nlohmann_json)
 
 if(DEFINED QBTEST)
+message(STATUS "Running with Testing set: ${QBTEST}")
 enable_testing()
 add_subdirectory(test)
 endif()

@@ -15,7 +15,8 @@ mkdir output >/dev/null 2>&1
 cd output
 
 # Run makefile generator, with testing enabled
-cmake .. -DCMAKE_CXX_COMPILER=/usr/local/bin/g++-9 -DCMAKE_C_COMPILER=/usr/local/bin/gcc-9 -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl -DQBTEST=True
+# cmake .. -DCMAKE_CXX_COMPILER=/usr/local/bin/g++-9 -DCMAKE_C_COMPILER=/usr/local/bin/gcc-9 -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl -DQBTEST=True
+cmake .. -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl -DQBTEST=True
 cmake_success=$?
 
 # Update compile commands

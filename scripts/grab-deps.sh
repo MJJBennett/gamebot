@@ -8,3 +8,4 @@ cd $script_dir/..
 
 # Clone nlohmann/json into dependencies folder
 git clone https://github.com/nlohmann/json.git deps/nlohmann_json
+git clone https://github.com/google/googletest.git deps/googletest

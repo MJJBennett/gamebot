@@ -19,7 +19,12 @@ add_executable(QueueBotTests Test_Parse.cpp Test_FileIO.cpp Test_Utils.cpp
 )
 target_include_directories(QueueBotTests PRIVATE "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>")
 target_include_directories(QueueBotTests PRIVATE "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/deps/nlohmann_json/single_include>")
+
+if (HAS_FS)
+target_link_libraries(QueueBotTests gtest_main)
+else()
 target_link_libraries(QueueBotTests gtest_main stdc++fs)
+endif(HAS_FS)
 add_test(NAME Simple COMMAND QueueBotTests)
 
 else()
