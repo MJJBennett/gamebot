@@ -1,0 +1,9 @@
+target_sources(GameBot
+    PRIVATE
+        web.cpp
+        wswrapper.cpp
+    PUBLIC
+        strings.hpp
+        web.hpp
+        wswrapper.hpp
+)

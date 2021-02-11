@@ -1,0 +1,12 @@
+target_sources(GameBot
+    PRIVATE
+        fileio.cpp
+        parse.cpp
+        utils.cpp
+    PUBLIC
+        debug.hpp
+        fileio.hpp
+        json_utils.hpp
+        parse.hpp
+        utils.hpp
+)
