@@ -2,6 +2,7 @@
 #define CONSTANTS_HPP
 
 #include <string>
+#include <vector>
 
 namespace qb
 {
@@ -27,7 +28,9 @@ const std::string websocket = "/?v=6&encoding=json";
 const std::string bot       = "/api/v6/gateway/bot";
 const auto channel_msg      = [](const std::string& channel_id) {
     return "/api/v6/channels/" + channel_id + "/messages";
-
+};
+const auto interaction = [](const std::string& specifier) {
+    return "/api/v8/interactions" + specifier;
 };
 
 } // namespace endpoints

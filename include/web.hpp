@@ -16,6 +16,7 @@ enum class Endpoint
 {
     channels,
     gateway_bot,
+    interactions,
 };
 
 /** Returns the endpoint string for a given enpoint identifier. **/
@@ -39,6 +40,7 @@ public:
     [[nodiscard]] nlohmann::json get(Endpoint);
     // Performs an HTTP POST request to the desired Discord endpoint.
     nlohmann::json post(Endpoint, const std::string& specifier, const std::string& body);
+    nlohmann::json post(Endpoint, const std::vector<std::string>& specifiers, const std::string& body);
 
     // Get a pointer to this application's io_context.
     boost::asio::io_context* ioc_ptr()
@@ -52,6 +54,8 @@ public:
         ioc_.run();
     }
 
+    void debug_mode(bool b) { debug_ = b; }
+
 private:
     boost::asio::io_context ioc_{};
     boost::asio::ip::tcp::resolver resolver{ioc_};
@@ -60,6 +64,7 @@ private:
 
     bool initialized_{false};
     bool failed_{false};
+    bool debug_{false};
 };
 
 } // namespace web

@@ -94,6 +94,10 @@ void qb::Bot::handle_event(const json& payload)
                 log_loud_ = true;
             else if (startswithword(cmd, "db:noloud"))
                 log_loud_ = false;
+            else if (startswithword(cmd, "db:verboseweb"))
+                web_ctx_->debug_mode(true);
+            else if (startswithword(cmd, "db:noverboseweb"))
+                web_ctx_->debug_mode(false);
             else if (startswithword(cmd, "recall"))
                 recall(cmd, channel);
             else if (startswith(cmd, "conf"))
@@ -115,6 +119,21 @@ void qb::Bot::handle_event(const json& payload)
                          "` is overly negative. You may be required to report for psychological "
                          "evaluation at later date.",
                      payload["d"]["channel_id"]);
+            }
+        }
+    }
+    else if (et == "INTERACTION_CREATE")
+    {
+        qb::log::point("An interaction was sent.");
+        const auto d = payload["d"];
+        if (const auto interact_id = j::get_opt<std::string>(d, "id"); interact_id)
+        {
+            if (const auto interact_tok = j::get_opt<std::string>(d, "token"); interact_tok)
+            {
+                json interact_json{{"type", 4}, {"data", {{"content", "Got your command!"}}}};
+                const auto _ = web_ctx_->post(
+                    web::Endpoint::interactions,
+                    std::vector<std::string>{*interact_id, *interact_tok, "callback"}, interact_json.dump());
             }
         }
     }
