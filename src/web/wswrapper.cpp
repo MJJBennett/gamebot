@@ -1,5 +1,5 @@
 #include "wswrapper.hpp"
-#include "debug.hpp"
+#include "../utils/debug.hpp"
 #include <boost/asio/ssl/stream.hpp>
 #include <boost/beast/websocket.hpp>
 #include <boost/beast/websocket/ssl.hpp>

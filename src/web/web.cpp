@@ -1,8 +1,8 @@
 #include "web.hpp"
 
-#include "debug.hpp"
+#include "../utils/debug.hpp"
 #include "strings.hpp"
-#include "utils.hpp"
+#include "../utils/utils.hpp"
 #include <boost/asio/connect.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/error.hpp>
@@ -12,7 +12,7 @@
 #include <boost/beast/websocket/ssl.hpp>
 #include <boost/thread.hpp>
 #include <thread>
-
+#include <numeric>
 namespace beast     = boost::beast;
 namespace http      = beast::http;
 namespace asio      = boost::asio;
