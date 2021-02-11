@@ -1,8 +1,8 @@
 #ifndef BOT_HPP
 #define BOT_HPP
 
-#include "queue.hpp"
-#include "web.hpp"
+#include "components/queue.hpp"
+#include "web/web.hpp"
 #include <boost/beast/core/flat_buffer.hpp>
 #include <boost/system/error_code.hpp>
 #include <optional>

@@ -5,6 +5,5 @@ add_subdirectory(components)
 target_sources(GameBot
     PRIVATE
         bot.cpp
-        main.cpp
         bot.hpp
 )

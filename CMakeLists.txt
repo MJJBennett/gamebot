@@ -20,7 +20,7 @@ try_compile(HAS_FS "${CMAKE_BINARY_DIR}/temp"
     "${CMAKE_SOURCE_DIR}/test/has_filesystem.cpp"
     CMAKE_FLAGS -DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_STANDARD_REQUIRED=ON)
 
-add_executable(GameBot)
+add_executable(GameBot src/main.cpp)
 add_subdirectory(src)
 
 target_link_libraries(GameBot PUBLIC ${CMAKE_THREAD_LIBS_INIT})

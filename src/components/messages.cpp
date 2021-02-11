@@ -1,6 +1,6 @@
 #include "messages.hpp"
 
-#include "utils.hpp"
+#include "utils/utils.hpp"
 
 std::string qb::messages::online()
 {

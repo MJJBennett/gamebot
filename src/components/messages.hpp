@@ -2,7 +2,7 @@
 #define MESSAGES_HPP
 
 #include "config.hpp"
-#include "parse.hpp"
+#include "utils/parse.hpp"
 #include <string>
 #include <vector>
 

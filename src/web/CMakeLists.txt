@@ -1,8 +1,7 @@
 target_sources(GameBot
-    PRIVATE
-        web.cpp
-        wswrapper.cpp
     PUBLIC
+        wswrapper.cpp
+        web.cpp
         strings.hpp
         web.hpp
         wswrapper.hpp

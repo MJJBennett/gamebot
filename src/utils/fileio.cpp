@@ -1,6 +1,6 @@
 #include "fileio.hpp"
 
-#include "config.hpp"
+#include "components/config.hpp"
 #include "debug.hpp"
 #include "json_utils.hpp"
 #include "parse.hpp"

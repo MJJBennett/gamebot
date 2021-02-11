@@ -1,13 +1,12 @@
 #include "bot.hpp"
 
-#include "debug.hpp"
-#include "fileio.hpp"
-#include "json_utils.hpp"
-#include "messages.hpp"
-#include "parse.hpp" // For command parsing
-#include "sentiment.hpp"
-#include "utils.hpp" // For get_bot_token
-#include "web.hpp"
+#include "utils/debug.hpp"
+#include "utils/fileio.hpp"
+#include "utils/json_utils.hpp"
+#include "components/messages.hpp"
+#include "utils/parse.hpp" // For command parsing
+#include "components/sentiment.hpp"
+#include "utils/utils.hpp" // For get_bot_token
 #include <algorithm>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/beast/core.hpp>
