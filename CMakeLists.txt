@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.13)
 project(GameBot LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(JSON_BuildTests OFF CACHE INTERNAL "")
 
-include_directories(include auth)
+include_directories(src auth)
 include_directories(/usr/local/opt/openssl/include)
 
 find_package(Boost 1.71 COMPONENTS program_options REQUIRED)
@@ -20,20 +20,9 @@ try_compile(HAS_FS "${CMAKE_BINARY_DIR}/temp"
     "${CMAKE_SOURCE_DIR}/test/has_filesystem.cpp"
     CMAKE_FLAGS -DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_STANDARD_REQUIRED=ON)
 
-add_executable(GameBot
-    include/config.hpp
-    src/fileio.cpp include/fileio.hpp
-    src/messages.cpp include/messages.hpp
-    src/parse.cpp include/parse.hpp
-    src/utils.cpp include/utils.hpp
-    src/sentiment.cpp include/sentiment.hpp
-    src/queue.cpp include/queue.hpp
-    include/debug.hpp
-    src/wswrapper.cpp include/wswrapper.hpp
-    src/web.cpp include/web.hpp
-    src/bot.cpp include/bot.hpp
-    src/main.cpp
-)
+add_executable(GameBot src/main.cpp)
+add_subdirectory(src)
+
 target_link_libraries(GameBot PUBLIC ${CMAKE_THREAD_LIBS_INIT})
 if (HAS_FS)
 else()

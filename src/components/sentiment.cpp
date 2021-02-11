@@ -1,7 +1,7 @@
 #include "sentiment.hpp"
 
-#include "debug.hpp"
-#include "parse.hpp"
+#include "utils/debug.hpp"
+#include "utils/parse.hpp"
 #include <algorithm>
 #include <numeric>
 #include <unordered_map>

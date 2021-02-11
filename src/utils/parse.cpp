@@ -1,6 +1,6 @@
 #include "parse.hpp"
 
-#include "config.hpp"
+#include "components/config.hpp"
 #include <algorithm>
 #include <cctype>
 
