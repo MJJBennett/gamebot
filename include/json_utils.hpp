@@ -27,6 +27,16 @@ D def(const json& jd, const std::string& key, const D& d)
     return d;
 }
 
+template <typename T>
+std::optional<T> get_opt(const json& jd, const std::string& key)
+{
+    if (const auto val_it = jd.find(key); val_it != jd.end())
+    {
+        return (*val_it).get<T>();
+    }
+    return {};
+}
+
 inline bool in(const json& jd, const std::string& key)
 {
     return jd.find(key) != jd.end();

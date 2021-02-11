@@ -118,6 +118,8 @@ std::string web::endpoint_str(Endpoint ep, const std::string& specifier)
         return qb::endpoints::channel_msg(specifier);
     case EP::gateway_bot:
         return qb::endpoints::bot;
+    case EP::interactions:
+        return qb::endpoints::interaction(specifier);
     default:
         return qb::endpoints::invalid;
     }
@@ -148,6 +150,15 @@ std::string web::endpoint_str(Endpoint ep, const std::string& specifier)
     return nlohmann::json::parse(res.body());
 }
 
+nlohmann::json web::context::post(Endpoint ep, const std::vector<std::string>& specifiers, const std::string& body)
+{
+    assert(initialized_);
+    return post(ep,
+                std::reduce(specifiers.begin(), specifiers.end(), std::string{},
+                            [](std::string l, std::string r) { return l + "/" + r; }),
+                body);
+}
+
 nlohmann::json web::context::post(Endpoint ep, const std::string& specifier, const std::string& body)
 {
     assert(initialized_);
@@ -166,6 +177,7 @@ nlohmann::json web::context::post(Endpoint ep, const std::string& specifier, con
     std::stringstream s;
     s << req;
     slg += s.str();
+    if (ep == Endpoint::interactions && debug_) slg.log_contents();
 
     // Send the HTTP request to the remote host
     http::write(stream_, req);
@@ -208,6 +220,13 @@ nlohmann::json web::context::post(Endpoint ep, const std::string& specifier, con
     slg.clear();
 
     // for (auto const& field : res) qb::log::point("field: ", field.name_string(), " | value: ", field.value());
+
+    // If we're using interactions, we don't need the response.
+    if (ep == Endpoint::interactions)
+    {
+        if (debug_) qb::log::point("Interaction response body:\n", res.body());
+        return {};
+    }
 
     // The relevant field is: X-RateLimit-Remaining
     qb::log::point("Ratelimit remaining: ", res["X-RateLimit-Remaining"]);

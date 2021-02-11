@@ -114,6 +114,14 @@ public:
         should_log_ = false;
     }
 
+    void log_contents()
+    {
+        if (should_log_)
+        {
+            qb::log::point(s_);
+        }
+    }
+
     ~scope()
     {
         if (should_log_)
