@@ -1,3 +1,5 @@
+add_subdirectory(games)
+
 target_sources(GameBot
     PRIVATE
         messages.cpp

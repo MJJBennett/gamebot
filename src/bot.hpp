@@ -11,25 +11,6 @@
 
 namespace qb
 {
-struct HangmanInstance
-{
-    // this is very much quick-and-dirty
-    // quick implementation for fun
-    HangmanInstance(std::string word) : word_(word)
-    {
-        guessed_letters_ += ' ';
-    }
-
-    bool guess_letter(std::string l);
-    bool guess_word(std::string w);
-
-    std::string str();
-
-    std::string guessed_letters_;
-    std::string word_;
-
-    size_t max_guesses_{5};
-};
 
 class Bot
 {
@@ -67,6 +48,7 @@ private:
     void handle_hello(const nlohmann::json& payload);
     void handle_event(const nlohmann::json& payload);
 
+public: /** Send is a part of our public API currently. */
     // Sends a message in a Discord channel.
     void send(std::string msg, std::string channel);
 
@@ -80,10 +62,6 @@ private:
 
     void configure(const std::string& cmd, const nlohmann::json& data);
     void assign_emote(const std::string& cmd, const std::string& channel);
-
-    void guess_hangman(const std::string& cmd, const std::string& channel);
-    void run_hangman(const std::string& cmd, const std::string& channel);
-    void letter_hangman(const std::string& cmd, const std::string& channel);
 
 private:
     void handle_queue_timeout(const std::string& message_id, const boost::system::error_code& error);
@@ -111,8 +89,6 @@ private:
     bool log_loud_{false};       // Debug - For lack of a better setup, this prints more.
 
     std::unordered_map<std::string, qb::queue> queues_; // Our actual queues.
-
-    std::optional<HangmanInstance> hangman_inst_;
 
     // Hashmap of callbacks; these are our commands.
     ::qb::Actions actions_;

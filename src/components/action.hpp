@@ -6,6 +6,10 @@
 #include <functional>
 #include <unordered_map>
 
+// TODO This is now pulling in JSON
+// This is not exactly ideal
+#include "api/message.hpp"
+
 namespace qb
 {
 class Bot;
@@ -15,6 +19,7 @@ public:
     enum class Value {
         Ok,
     };
+    static Result ok() { return Result(Value::Ok); }
 
     Result(std::string err) : err_(std::move(err)) {}
     Result(::qb::Result::Value result) : val(result) {}
@@ -24,7 +29,9 @@ private:
     std::string err_;
 };
 
-using Actions = std::unordered_map<std::string, std::function<::qb::Result(/*std::vector<*/std::string/*>*/, std::string, qb::Bot&)>>;
+using ActionCallback = std::function<::qb::Result(const std::string&, const api::Message&, qb::Bot&)>;
+
+using Actions = std::unordered_map<std::string, ActionCallback>;
 }
 
 #endif // QB_ACTION_HPP
