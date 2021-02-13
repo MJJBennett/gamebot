@@ -108,7 +108,7 @@ void qb::Bot::handle_event(const json& payload)
                 // Check if we have an action bound for this command
                 if (const auto& a = qb::parse::get_command_name(cmd); actions_.find(a) != actions_.end())
                 {
-                    const auto _unused_retval = actions_[a](cmd, channel, *this);
+                    const auto _unused_retval = actions_[a](cmd, api::Message::create(payload["d"]), *this);
                 }
             }
         }
@@ -560,7 +560,7 @@ void qb::Bot::start()
     web::context web_context;
     web_context.initialize();
     web_ctx_ = &web_context;
-    dead = false;
+    dead     = false;
 
     qb::log::point("Creating timer for ping operations.");
     timer_.emplace(*web_context.ioc_ptr(), boost::asio::chrono::milliseconds(hb_interval_ms_));
@@ -583,11 +583,20 @@ void qb::Bot::start()
      * Any delayed startup should go here.
      */
 
-    actions_.insert(std::make_pair("hangman", [](std::string cmd, std::string channel, Bot& bot) { bot.run_hangman(cmd, channel); return Result(Result::Value::Ok); }) );
-    actions_.insert(std::make_pair("guess", [](std::string cmd, std::string channel, Bot& bot) { bot.guess_hangman(cmd, channel); return Result(Result::Value::Ok); }));
-    actions_.insert(std::make_pair("letter", [](std::string cmd, std::string channel, Bot& bot) { bot.letter_hangman(cmd, channel); return Result(Result::Value::Ok); }));
+    actions_.insert(std::make_pair("hangman", [](std::string cmd, api::Message msg, Bot& bot) {
+        bot.run_hangman(cmd, msg.channel);
+        return Result(Result::Value::Ok);
+    }));
+    actions_.insert(std::make_pair("guess", [](std::string cmd, api::Message msg, Bot& bot) {
+        bot.guess_hangman(cmd, msg.channel);
+        return Result(Result::Value::Ok);
+    }));
+    actions_.insert(std::make_pair("letter", [](std::string cmd, api::Message msg, Bot& bot) {
+        bot.letter_hangman(cmd, msg.channel);
+        return Result(Result::Value::Ok);
+    }));
 
-    /** 
+    /**
      * Begin allowing completion handlers to fire.
      * Blocking call - anything after this is only executed after
      * the application stops (i.e. the bot shuts down)

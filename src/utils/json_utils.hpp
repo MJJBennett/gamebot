@@ -27,6 +27,8 @@ D def(const json& jd, const std::string& key, const D& d)
     return d;
 }
 
+constexpr auto def_str = def<std::string>;
+
 template <typename T>
 std::optional<T> get_opt(const json& jd, const std::string& key)
 {
