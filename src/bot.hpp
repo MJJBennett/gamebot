@@ -1,6 +1,7 @@
 #ifndef BOT_HPP
 #define BOT_HPP
 
+#include "components/action.hpp"
 #include "components/queue.hpp"
 #include "web/web.hpp"
 #include <boost/beast/core/flat_buffer.hpp>
@@ -41,6 +42,7 @@ public:
     };
 
 public:
+    ~Bot();
     explicit Bot(Flag = Flag::None);
     void start();    // Runs the bot
     void shutdown(); // Stops all asynchronous operations.
@@ -112,10 +114,15 @@ private:
 
     std::optional<HangmanInstance> hangman_inst_;
 
+    // Hashmap of callbacks; these are our commands.
+    ::qb::Actions actions_;
+
 private:
     // Heartbeat data (opcode 1). Sent across WebSocket connection at regular intervals.
     const std::string heartbeat_msg_{
         nlohmann::json{{"op", 1}, {"s", nullptr}, {"d", {}}, {"t", nullptr}}.dump()};
+
+    bool dead{true};
 };
 
 } // namespace qb

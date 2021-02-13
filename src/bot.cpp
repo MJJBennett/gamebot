@@ -552,6 +552,7 @@ void qb::Bot::read_handler(const boost::system::error_code& error, std::size_t b
 
 void qb::Bot::start()
 {
+    dead = false;
     // Some basic initialization prior to starting any networking calls.
     qb::log::point("Creating a web context.");
     web::context web_context;
@@ -582,8 +583,14 @@ void qb::Bot::start()
     qb::log::point("Finishing bot execution...");
 }
 
+qb::Bot::~Bot() {
+    shutdown();
+}
+
 void qb::Bot::shutdown()
 {
+    if (dead) return;
+    dead = true;
     qb::log::point("Beginning shutdown.");
     // Stop the timer.
     timer_->cancel();
