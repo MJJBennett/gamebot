@@ -1,19 +1,21 @@
 #include "hangman.hpp"
 
 #include "bot.hpp"
-#include "utils/parse.hpp"
 #include "utils/fileio.hpp"
+#include "utils/parse.hpp"
 #include "utils/utils.hpp"
 
-#include <functional>
 #include <algorithm>
+#include <functional>
 
 void qb::Hangman::register_actions(Actions& actions)
 {
     using namespace std::placeholders;
-    register_all(actions, std::make_pair("hangman", (ActionCallback)std::bind(&qb::Hangman::run_hangman, this, _1, _2, _3)),
-                 std::make_pair("guess", (ActionCallback)std::bind(&qb::Hangman::guess_hangman, this, _1, _2, _3)),
-                 std::make_pair("letter", (ActionCallback)std::bind(&qb::Hangman::letter_hangman, this, _1, _2, _3)));
+    register_all(
+        actions,
+        std::make_pair("hangman", (ActionCallback)std::bind(&qb::Hangman::run_hangman, this, _1, _2, _3)),
+        std::make_pair("guess", (ActionCallback)std::bind(&qb::Hangman::guess_hangman, this, _1, _2, _3)),
+        std::make_pair("letter", (ActionCallback)std::bind(&qb::Hangman::letter_hangman, this, _1, _2, _3)));
 }
 
 qb::Result qb::Hangman::guess_hangman(const std::string& cmd, const api::Message& msg, Bot& bot)
@@ -37,6 +39,7 @@ qb::Result qb::Hangman::guess_hangman(const std::string& cmd, const api::Message
 
 qb::Result qb::Hangman::run_hangman(const std::string& cmd, const api::Message& msg, Bot& bot)
 {
+    qb::log::point("Starting a hangman game.");
     const auto& channel = msg.channel;
     if (!guessed_letters_.empty())
     {
@@ -49,8 +52,10 @@ qb::Result qb::Hangman::run_hangman(const std::string& cmd, const api::Message& 
     // already had all the framework in place to do this
     word_ = *qb::select_randomly(words.begin(), words.end());
     std::transform(word_.begin(), word_.end(), word_.begin(), tolower);
+    guessed_letters_ = " ";
     bot.send("[Hangman] `" + str() + "`", channel);
-        return qb::Result::ok();
+    qb::log::point("Finished initializing a hangman game.");
+    return qb::Result::ok();
 }
 
 qb::Result qb::Hangman::letter_hangman(const std::string& cmd, const api::Message& msg, Bot& bot)
@@ -66,7 +71,7 @@ qb::Result qb::Hangman::letter_hangman(const std::string& cmd, const api::Messag
     std::transform(letters.begin(), letters.end(), letters.begin(), tolower);
     guessed_letters_ += letters;
     bot.send("[Hangman] `" + str() + "`", channel);
-        return qb::Result::ok();
+    return qb::Result::ok();
 }
 
 // quick and dirty hangman impl
