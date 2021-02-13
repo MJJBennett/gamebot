@@ -1,8 +1,8 @@
-#include "fileio.hpp"
+#include "utils/fileio.hpp"
 
-#include "config.hpp"
-#include "parse.hpp"
-#include "utils.hpp"
+#include "components/config.hpp"
+#include "utils/parse.hpp"
+#include "utils/utils.hpp"
 #include "gtest/gtest.h"
 #include <string>
 #include <vector>
@@ -31,9 +31,11 @@ TEST(FileIO, GetSets)
     // Test exactly what we have in src/bot.cpp for redundancy
     auto components = qb::parse::split(" recall:wordset1", ':');
     components.erase(components.begin());
-    EXPECT_EQ(qb::parse::concatenate(qb::fileio::get_set(components.at(0)), ","), "set,is a,set of,worders");
+    EXPECT_EQ(qb::parse::concatenate(qb::fileio::get_set(components.at(0)), ","),
+              "set,is a,set of,worders");
 
     components = qb::parse::split(" recall:wordset1:default", ':');
     components.erase(components.begin());
-    EXPECT_EQ(qb::parse::concatenate(qb::fileio::get_sets(components), ","), "set,is a,set of,worders,this,is a,set of,words");
+    EXPECT_EQ(qb::parse::concatenate(qb::fileio::get_sets(components), ","),
+              "set,is a,set of,worders,this,is a,set of,words");
 }
