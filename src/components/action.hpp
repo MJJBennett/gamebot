@@ -13,7 +13,7 @@ class Bot;
 class Result {
 public:
     enum class Value {
-
+        Ok,
     };
 
     Result(std::string err) : err_(std::move(err)) {}
@@ -24,7 +24,7 @@ private:
     std::string err_;
 };
 
-using Actions = std::unordered_map<std::string, std::function<::qb::Result(/*std::vector<*/std::string/*>*/, qb::Bot&)>>;
+using Actions = std::unordered_map<std::string, std::function<::qb::Result(/*std::vector<*/std::string/*>*/, std::string, qb::Bot&)>>;
 }
 
 #endif // QB_ACTION_HPP
