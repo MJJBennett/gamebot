@@ -8,6 +8,8 @@
 
 namespace qb
 {
+class Bot;
+
 class Result {
 public:
     enum class Value {
@@ -22,7 +24,7 @@ private:
     std::string err_;
 };
 
-using Actions = std::unordered_map<std::string, std::function<::qb::Result(std::vector<std::string>)>>;
+using Actions = std::unordered_map<std::string, std::function<::qb::Result(/*std::vector<*/std::string/*>*/, qb::Bot&)>>;
 }
 
 #endif // QB_ACTION_HPP

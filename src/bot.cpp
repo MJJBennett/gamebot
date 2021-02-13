@@ -1,11 +1,11 @@
 #include "bot.hpp"
 
+#include "components/messages.hpp"
+#include "components/sentiment.hpp"
 #include "utils/debug.hpp"
 #include "utils/fileio.hpp"
 #include "utils/json_utils.hpp"
-#include "components/messages.hpp"
 #include "utils/parse.hpp" // For command parsing
-#include "components/sentiment.hpp"
 #include "utils/utils.hpp" // For get_bot_token
 #include <algorithm>
 #include <boost/asio/steady_timer.hpp>
@@ -109,6 +109,14 @@ void qb::Bot::handle_event(const json& payload)
                 guess_hangman(cmd, channel);
             else if (startswithword(cmd, "letter"))
                 letter_hangman(cmd, channel);
+            else
+            {
+                // Check if we have an action bound for this command
+                if (const auto& a = qb::parse::get_command_name(cmd); actions_.find(a) != actions_.end())
+                {
+                    const auto _unused_retval = actions_[a](cmd, *this);
+                }
+            }
         }
         else if (mode_1984_)
         {
@@ -132,7 +140,8 @@ void qb::Bot::handle_event(const json& payload)
                 json interact_json{{"type", 4}, {"data", {{"content", "Got your command!"}}}};
                 const auto _ = web_ctx_->post(
                     web::Endpoint::interactions,
-                    std::vector<std::string>{*interact_id, *interact_tok, "callback"}, interact_json.dump());
+                    std::vector<std::string>{*interact_id, *interact_tok, "callback"},
+                    interact_json.dump());
             }
         }
     }
@@ -583,7 +592,8 @@ void qb::Bot::start()
     qb::log::point("Finishing bot execution...");
 }
 
-qb::Bot::~Bot() {
+qb::Bot::~Bot()
+{
     shutdown();
 }
 
