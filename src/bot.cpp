@@ -100,6 +100,8 @@ void qb::Bot::handle_event(const json& payload)
                 web_ctx_->debug_mode(false);
             else if (startswithword(cmd, "recall"))
                 recall(cmd, channel);
+            else if (startswithword(cmd, "db:get_emotes"))
+                recall_emote(cmd, channel);
             else if (startswith(cmd, "conf"))
                 configure(cmd, payload["d"]);
             else if (startswithword(cmd, "assign"))
@@ -391,6 +393,16 @@ void qb::Bot::configure(const std::string& cmd, const nlohmann::json& data)
     }
 }
 
+void qb::Bot::recall_emote(const std::string& cmd, const std::string& channel)
+{
+    using namespace qb::fileio;
+
+    auto components = qb::parse::split(cmd, ' ');
+    components.erase(components.begin());
+    qb::log::point("Sending some emotes in recall_emote command.");
+    send(qb::parse::concatenate(qb::fileio::get_emotes(components), ", "), channel);
+}
+
 void qb::Bot::assign_emote(const std::string& cmd, const std::string& channel)
 {
     using namespace qb::fileio;
@@ -398,10 +410,13 @@ void qb::Bot::assign_emote(const std::string& cmd, const std::string& channel)
     auto parsed = qb::parse::split(cmd);
     if (parsed.size() != 3)
     {
+        qb::log::point("-> Incorrect number of arguments.");
         send("Arguments to assign must be a single word followed by an emote.", channel);
         return;
     }
+    qb::log::point("-> Registering emote.");
     register_emote(parsed.at(1), parsed.at(2));
+    qb::log::point("-> Registered emote.");
     send("Success! Name " + parsed.at(1) + " registered to emote " + get_emote(parsed.at(1)) + " !", channel);
 }
 

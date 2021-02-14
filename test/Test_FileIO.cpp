@@ -4,6 +4,8 @@
 #include "utils/parse.hpp"
 #include "utils/utils.hpp"
 #include "gtest/gtest.h"
+
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -38,4 +40,10 @@ TEST(FileIO, GetSets)
     components.erase(components.begin());
     EXPECT_EQ(qb::parse::concatenate(qb::fileio::get_sets(components), ","),
               "set,is a,set of,worders,this,is a,set of,words");
+}
+
+TEST(FileIO, GetEmotes)
+{
+    SCOPED_TRACE("Ensure the emote data file exists: " + qb::config::emote_data_file());
+    ASSERT_TRUE(std::filesystem::exists(qb::config::emote_data_file()));
 }

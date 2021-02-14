@@ -61,6 +61,7 @@ private:
     void list(const std::string& cmd, const std::string& channel);
 
     void configure(const std::string& cmd, const nlohmann::json& data);
+    void recall_emote(const std::string& cmd, const std::string& channel);
     void assign_emote(const std::string& cmd, const std::string& channel);
 
 private:
