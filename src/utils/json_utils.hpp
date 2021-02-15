@@ -44,6 +44,19 @@ inline bool in(const json& jd, const std::string& key)
     return jd.find(key) != jd.end();
 }
 
+template <typename T>
+bool has_path(const T& jd, const std::string& p)
+{
+    return in(jd, p);
+}
+
+template <typename T, typename... Ts>
+bool has_path(const T& jd, const std::string& p, const Ts&... ts)
+{
+    if (!in(jd, p)) return false;
+    return has_path(jd[p], std::forward<const Ts&>(ts)...);
+}
+
 inline json get_identify_packet(const std::string& token)
 {
     return json{{"op", 2},
