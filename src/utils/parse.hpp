@@ -86,12 +86,16 @@ inline std::string concatenate_quoted(std::vector<std::string> strs, std::string
 }
 
 inline std::optional<std::string> emote_snowflake(const std::string& full_emote) {
+    if (full_emote.size() == 0) return {};
+    if (full_emote[0] & 0x10000000) return full_emote;
     auto sf_begin = std::find_if(full_emote.rbegin(), full_emote.rend(), isdigit);    
     if (sf_begin == full_emote.rend()) return {};
     auto sf_end = std::find_if(sf_begin, full_emote.rend(), [](char c) {return !isdigit(c);});
     const auto res = std::string{sf_end.base(), sf_begin.base()};
     if (res.size() < 4) return {};
-    return res;
+    // now we need the name, apparently
+    const auto name = std::string{full_emote.begin() + 2, sf_end.base()};
+    return name + res;
 }
 
 } // namespace qb::parse

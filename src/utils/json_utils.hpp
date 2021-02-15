@@ -3,6 +3,8 @@
 
 #include <nlohmann/json.hpp>
 
+#include "debug.hpp"
+
 namespace qb::json_utils
 {
 using json = nlohmann::json;
@@ -68,6 +70,17 @@ inline json get_identify_packet(const std::string& token)
                     {"$device", "QueueBot"},
                     {"$referrer", ""},
                     {"$referring_domain", ""}}}}}};
+}
+
+inline json parse_safe(const std::string& content)
+{
+    try {
+        return json::parse(content);
+    } catch (json::parse_error e) {
+        qb::log::point("Could not parse JSON: ", e.what());
+        if (content.size() < 2) qb::log::point("Note: This error is likely caused by an empty string, and can be ignored.");
+        return {};
+    }
 }
 
 } // namespace qb::json_utils
