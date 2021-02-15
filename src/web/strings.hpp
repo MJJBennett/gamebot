@@ -4,6 +4,13 @@
 #include <string>
 #include <vector>
 
+namespace web
+{
+class EndpointURI : public std::string
+{
+};
+} // namespace web
+
 namespace qb
 {
 constexpr int http_version = 11; // Technically not a string
@@ -33,6 +40,10 @@ const auto interaction = [](const std::string& specifier) {
     return "/api/v8/interactions" + specifier;
 };
 
+const auto reaction = [](const std::string& channel_id, const std::string& message_id, const std::string& emoji) {
+    return web::EndpointURI{"/api/v8/channels/" + channel_id + "/messages/" + message_id +
+                            "/reactions/" + emoji + "/@me"};
+};
 } // namespace endpoints
 
 } // namespace qb

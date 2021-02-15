@@ -11,7 +11,6 @@
 
 namespace qb
 {
-
 class Bot
 {
 public:
@@ -48,9 +47,30 @@ private:
     void handle_hello(const nlohmann::json& payload);
     void handle_event(const nlohmann::json& payload);
 
+    /** PUBLIC API
+     * void send(std::string msg, std::string channel)
+     *  -> Queues a message to be sent by the async loop.
+     *
+     * // UNIMPLEMENTED
+     * void dispatch_in(ActionCallback action, std::chrono::duration when)
+     *  -> Dispatches an action after the duration elapses. Note that here,
+     *     the duration is given in seconds.
+     *
+     * void on_message_id(std::string message_id, ActionCallback action, bool persist = false)
+     *  -> When a message matching the message id is received, execute the action.
+     *     The callback will be removed at that point, unless persist is set to true.
+     */
 public: /** Send is a part of our public API currently. */
     // Sends a message in a Discord channel.
-    void send(std::string msg, std::string channel);
+    nlohmann::json send(std::string msg, std::string channel);
+
+    // UNIMPLEMENTED
+    bool dispatch_in(ActionCallback action, std::chrono::duration<long> when);
+
+    void on_message_id(std::string message_id, ActionCallback action);
+
+    // scary, will be removed one day
+    web::context* get_context() { return web_ctx_; }
 
 private:
     /** Command handlers. **/
@@ -68,6 +88,8 @@ private:
     void handle_queue_timeout(const std::string& message_id, const boost::system::error_code& error);
 
     bool is_identity(const nlohmann::json& data);
+
+    bool execute_callbacks(const std::string& key, const nlohmann::json& json_data, MultiActions& callbacks);
 
 private:
     std::optional<web::WSWrapper> ws_;                 // WebSocket connection
@@ -93,6 +115,11 @@ private:
 
     // Hashmap of callbacks; these are our commands.
     ::qb::Actions actions_;
+
+    /**
+     * Public API features.
+     */
+    ::qb::MultiActions message_id_callbacks_;
 
 private:
     // Heartbeat data (opcode 1). Sent across WebSocket connection at regular intervals.

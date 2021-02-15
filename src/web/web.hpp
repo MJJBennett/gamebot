@@ -19,6 +19,8 @@ enum class Endpoint
     interactions,
 };
 
+class EndpointURI;
+
 /** Returns the endpoint string for a given enpoint identifier. **/
 std::string endpoint_str(Endpoint, const std::string& specifier = "");
 
@@ -41,6 +43,8 @@ public:
     // Performs an HTTP POST request to the desired Discord endpoint.
     nlohmann::json post(Endpoint, const std::string& specifier, const std::string& body);
     nlohmann::json post(Endpoint, const std::vector<std::string>& specifiers, const std::string& body);
+
+    nlohmann::json put(const EndpointURI& uri, const std::string& body);
 
     // Get a pointer to this application's io_context.
     boost::asio::io_context* ioc_ptr()

@@ -1,8 +1,8 @@
 #include "bot.hpp"
 
+#include "components/games/hangman.hpp"
 #include "components/messages.hpp"
 #include "components/sentiment.hpp"
-#include "components/games/hangman.hpp"
 #include "utils/debug.hpp"
 #include "utils/fileio.hpp"
 #include "utils/json_utils.hpp"
@@ -57,6 +57,10 @@ void qb::Bot::handle_event(const json& payload)
     {
         if (log_loud_) qb::log::point("A message was created.");
         // qb::log::data("Message", payload.dump(2));
+
+        // We make callbacks right away.
+        if (j::has_path(payload, "d", "id"))
+            execute_callbacks(payload["d"]["id"], payload["d"], message_id_callbacks_);
 
         if (is_identity(payload))
         {
@@ -149,25 +153,6 @@ void qb::Bot::handle_event(const json& payload)
     }
 }
 
-void qb::Bot::send(std::string msg, std::string channel)
-{
-    if (msg.size() > 2000)
-    {
-        send("I can't do that. [Message length too large: " + std::to_string(msg.size()) +
-                 " - Must be 2000 or less.]",
-             channel);
-        return;
-    }
-    json msg_json{{"content", msg}};
-    const auto resp = web_ctx_->post(web::Endpoint::channels, channel, msg_json.dump());
-    if (!identity_)
-    {
-        identity_ = resp["author"]["id"];
-        qb::log::point("Setting identity to: ", *identity_);
-    }
-    if (log_loud_) qb::log::data("Response", resp.dump(2));
-}
-
 bool qb::Bot::is_identity(const nlohmann::json& msg)
 {
     if (!identity_) return false;
@@ -180,6 +165,54 @@ bool qb::Bot::is_identity(const nlohmann::json& msg)
         qb::log::err("Caught some error ", e.what());
     }
     return false;
+}
+
+bool qb::Bot::execute_callbacks(const std::string& key, const nlohmann::json& json_data, MultiActions& callbacks)
+{
+    if (callbacks.find(key) == callbacks.end()) return false;
+
+    for(auto& cb : callbacks[key]) {
+        auto res = cb(key, api::Message::create(json_data), *this);
+        // TODO if res == or .has PERSIST_CALLBACK we don't delete
+    }
+    callbacks.erase(key); // TODO SEE ABOVE
+
+    return false; // return true when the action wants to not parse as a command, TODO
+}
+
+nlohmann::json qb::Bot::send(std::string msg, std::string channel)
+{
+    if (msg.size() > 2000)
+    {
+        send("I can't do that. [Message length too large: " + std::to_string(msg.size()) +
+                 " - Must be 2000 or less.]",
+             channel);
+        return {};
+    }
+    json msg_json{{"content", msg}};
+    const auto resp = web_ctx_->post(web::Endpoint::channels, channel, msg_json.dump());
+    if (!identity_)
+    {
+        identity_ = resp["author"]["id"];
+        qb::log::point("Setting identity to: ", *identity_);
+    }
+    if (log_loud_) qb::log::data("Response", resp.dump(2));
+    return resp;
+}
+
+bool qb::Bot::dispatch_in(ActionCallback action, std::chrono::duration<long> when)
+{
+    // Currently unimplemented. TODO.
+    return false;
+}
+
+void qb::Bot::on_message_id(std::string message_id, qb::ActionCallback action)
+{
+    if (message_id_callbacks_.find(message_id) == message_id_callbacks_.end())
+    {
+        message_id_callbacks_.try_emplace(message_id);
+    }
+    message_id_callbacks_[message_id].emplace_back(std::move(action));
 }
 
 /*****
@@ -637,5 +670,4 @@ void qb::Bot::shutdown()
     ws_.reset();
     qb::log::point("Shutdown completed.");
 }
-
 
