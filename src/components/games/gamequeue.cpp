@@ -5,7 +5,7 @@
 #include "utils/parse.hpp"
 #include "utils/utils.hpp"
 
-void qb::QueueComponent::register_actions(Actions& actions)
+void qb::QueueComponent::register_actions(Actions<>& actions)
 {
     using namespace std::placeholders;
     register_all(

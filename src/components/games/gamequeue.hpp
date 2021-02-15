@@ -30,7 +30,7 @@ public:
     qb::Result add_queue(const std::string& cmd, const api::Message& msg, Bot& bot);
     qb::Result remove_queue(const std::string& cmd, const api::Message& msg, Bot& bot);
 
-    void register_actions(Actions& actions) override;
+    void register_actions(Actions<>& actions) override;
     
 private:
     std::unordered_map<std::string, Queue> active_queues;
