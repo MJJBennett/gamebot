@@ -2,6 +2,7 @@
 
 #include "components/messages.hpp"
 #include "components/sentiment.hpp"
+#include "components/games/gamequeue.hpp"
 #include "components/games/hangman.hpp"
 #include "utils/debug.hpp"
 #include "utils/fileio.hpp"
@@ -76,8 +77,8 @@ void qb::Bot::handle_event(const json& payload)
                 shutdown();
             else if (startswith(cmd, "print "))
                 print(cmd, channel);
-            else if (startswith(cmd, "queue "))
-                queue(cmd, payload["d"]);
+            // else if (startswith(cmd, "queue "))
+            //     queue(cmd, payload["d"]);
             else if (startswith(cmd, "s"))
                 store(cmd, channel);
             else if (startswithword(cmd, "online"))
@@ -197,120 +198,122 @@ void qb::Bot::list(const std::string& cmd, const std::string& channel)
     send(qb::messages::keys(qb::parse::concatenate(qb::fileio::skribbl::keys())), channel);
 }
 
-void qb::Bot::queue(const std::string& cmd, const nlohmann::json& data)
-{
-    const std::string channel = data["channel_id"];
-    const std::string guild   = data["guild_id"];
-    const std::string msg_id  = data["id"];
+// void qb::Bot::queue(const std::string& cmd, const nlohmann::json& data)
+// {
+//     const std::string channel = data["channel_id"];
+//     const std::string guild   = data["guild_id"];
+//     const std::string msg_id  = data["id"];
 
-    using namespace qb::parse;
-    auto contents = split(cmd.substr(6));
+//     using namespace qb::parse;
+//     auto contents = split(cmd.substr(6));
 
-    /*
-    // Should be in the format of [time] [choices...]
-    // Order should be irrelevant, assuming time is properly formatted.
-    auto [time, games] = get_time(contents);
+//     /*
+//     // Should be in the format of [time] [choices...]
+//     // Order should be irrelevant, assuming time is properly formatted.
+//     auto [time, games] = get_time(contents);
 
-    if (time == "")
-    {
-    //    send(qb::messages::queue_needs_time(), channel);
-    }*/
+//     if (time == "")
+//     {
+//     //    send(qb::messages::queue_needs_time(), channel);
+//     }*/
 
-    // Functionality before abstraction
-    // !qb queue Activity [Max Participants | Timeout]
+//     // Functionality before abstraction
+//     // !qb queue Activity [Max Participants | Timeout]
 
-    if (contents.size() != 2)
-    {
-        send(
-            "Current format for queue is: queue [Activity] [Time | Max Participants] (e.g. queue "
-            "Soccer 3m or queue Chess 2)",
-            channel);
-        return;
-    }
+//     if (contents.size() != 2)
+//     {
+//         send(
+//             "Current format for queue is: queue [Activity] [Time | Max Participants] (e.g. queue "
+//             "Soccer 3m or queue Chess 2)",
+//             channel);
+//         return;
+//     }
 
-    int param = 0;
-    bool time = false;
-    try
-    {
-        size_t p{0};
-        param = stoi(contents.at(1), &p);
+//     int param = 0;
+//     bool time = false;
+//     try
+//     {
+//         size_t p{0};
+//         param = stoi(contents.at(1), &p);
 
-        if (p != contents.at(1).size())
-        {
-            time = true;
-        }
-    }
-    catch (const std::invalid_argument&)
-    {
-        send(
-            "Current format for queue is: queue [Activity] [Time | Max Participants] (e.g. queue "
-            "Soccer 3m or queue Chess 2)",
-            channel);
-        return;
-    }
+//         if (p != contents.at(1).size())
+//         {
+//             time = true;
+//         }
+//     }
+//     catch (const std::invalid_argument&)
+//     {
+//         send(
+//             "Current format for queue is: queue [Activity] [Time | Max Participants] (e.g. queue "
+//             "Soccer 3m or queue Chess 2)",
+//             channel);
+//         return;
+//     }
 
-    if (time)
-        qb::log::point("Starting time queue with value of ", param);
-    else
-        qb::log::point("Starting person queue with value of ", param);
+    // if (time)
+    //     qb::log::point("Starting time queue with value of ", param);
+    // else
+    //     qb::log::point("Starting person queue with value of ", param);
 
-    if (time)
-    {
-        auto [it, b] = queues_.emplace(std::piecewise_construct, std::make_tuple(msg_id),
-                                       std::make_tuple(guild, channel, param, web_ctx_->ioc_ptr()));
-        if (!b)
-        {
-            send("Something failed when creating the queue. Please try again!", channel);
-        }
-        it->second.async_wait(std::bind(&qb::Bot::handle_queue_timeout, this, msg_id, std::placeholders::_1),
-                              std::chrono::minutes(param));
-    }
-    else
-    {
-        auto [it, b] = queues_.emplace(std::piecewise_construct, std::make_tuple(msg_id),
-                                       std::make_tuple(guild, channel, param));
-        if (!b)
-        {
-            send("Something failed when creating the queue. Please try again!", channel);
-        }
-    }
+    // if (time)
+    // {
+    //     auto [it, b] = queues_.emplace(std::piecewise_construct, std::make_tuple(msg_id),
+    //                                    std::make_tuple(guild, channel, param, web_ctx_->ioc_ptr()));
+    //     if (!b)
+    //     {
+    //         send("Something failed when creating the queue. Please try again!", channel);
+    //     }
+    //     it->second.async_wait(std::bind(&qb::Bot::handle_queue_timeout, this, msg_id, std::placeholders::_1),
+    //                           std::chrono::minutes(param));
+    // }
+    // else
+    // {
+    //     auto [it, b] = queues_.emplace(std::piecewise_construct, std::make_tuple(msg_id),
+    //                                    std::make_tuple(guild, channel, param));
+    //     if (!b)
+    //     {
+    //         send("Something failed when creating the queue. Please try again!", channel);
+    //     }
+    // }
 
-    /*
+    
     // Write our own parsing logic here, for now
     // It can be assumed that data is valid and contains what it must
-    if (queues_.find(guild) == queues_.end())
-    {
-        queues_.emplace(guild, std::vector<nlohmann::json>{});
-    }*/
+//     if (queues_.find(guild) == queues_.end())
+//     {
+//         queues_.emplace(guild, std::vector<nlohmann::json>{});
+//     }
 
-    // send(messages::queue_start(contents), channel);
-    send("Queuing for " + contents.at(0) + "! Respond to this message with " +
-             qb::fileio::get_emote("yes") + " to join the queue, " +
-             qb::fileio::get_emote("maybe") + " to indicate a 'maybe', or " +
-             qb::fileio::get_emote("no") + " to indicate a definite no.",
-         channel);
-}
+//     // send(messages::queue_start(contents), channel);
+//     send("Queuing for " + contents.at(0) + "! Respond to this message with " +
+//              qb::fileio::get_emote("yes") + " to join the queue, " +
+//              qb::fileio::get_emote("maybe") + " to indicate a 'maybe', or " +
+//              qb::fileio::get_emote("no") + " to indicate a definite no.",
+//          channel);
+    
+// }
 
-void qb::Bot::handle_queue_timeout(const std::string& message_id, const boost::system::error_code& error)
-{
-    qb::log::point("Handling queue timeout for message id ", message_id);
-    if (error)
-    {
-        qb::log::err(error.message());
-        return;
-    }
 
-    if (auto it = queues_.find(message_id); it != queues_.end())
-    {
-        std::string channel = std::move(it->second.channel_id_);
-        queues_.erase(it);
-        send("Queue is complete!", channel);
-    }
-    else
-    {
-        qb::log::warn("Could not find that message ID in the map.");
-    }
-}
+// void qb::Bot::handle_queue_timeout(const std::string& message_id, const boost::system::error_code& error)
+// {
+//     qb::log::point("Handling queue timeout for message id ", message_id);
+//     if (error)
+//     {
+//         qb::log::err(error.message());
+//         return;
+//     }
+
+//     if (auto it = queues_.find(message_id); it != queues_.end())
+//     {
+//         std::string channel = std::move(it->second.channel_id_);
+//         queues_.erase(it);
+//         send("Queue is complete!", channel);
+//     }
+//     else
+//     {
+//         qb::log::warn("Could not find that message ID in the map.");
+//     }
+// }
 
 void qb::Bot::store(const std::string& cmd, const std::string& channel)
 {
@@ -586,7 +589,10 @@ void qb::Bot::start()
      */
     qb::Hangman hangman;
     hangman.register_actions(actions_);
-
+    
+    qb::QueueComponent queues;
+    queues.register_actions(actions_);
+    
     /**
      * Begin allowing completion handlers to fire.
      * Blocking call - anything after this is only executed after

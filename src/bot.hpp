@@ -88,8 +88,10 @@ private:
     bool write_outgoing_{false}; // Debug - Fully print outgoing WebSocket data.
     bool log_loud_{false};       // Debug - For lack of a better setup, this prints more.
 
-    std::unordered_map<std::string, qb::queue> queues_; // Our actual queues.
+    // std::unordered_map<std::string, qb::queue> queues_; 
 
+    // Our actual queues.
+    
     // Hashmap of callbacks; these are our commands.
     ::qb::Actions actions_;
 
