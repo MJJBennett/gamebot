@@ -78,7 +78,7 @@ void qb::Bot::handle_event(const json& payload)
                 print(cmd, channel);
             else if (startswith(cmd, "queue "))
                 queue(cmd, payload["d"]);
-            else if (startswith(cmd, "s"))
+            else if (startswith(cmd, "store"))
                 store(cmd, channel);
             else if (startswithword(cmd, "online"))
                 send(qb::messages::online(), channel);

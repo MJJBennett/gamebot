@@ -224,9 +224,9 @@ nlohmann::json web::context::post(Endpoint ep, const std::string& specifier, con
     // If we're using interactions, we don't need the response.
     if (ep == Endpoint::interactions)
     {
-        if (debug_) qb::log::point("Interaction response body:\n", res.body());
         return {};
     }
+    if (debug_) qb::log::point("Response body:\n", res.body());
 
     // The relevant field is: X-RateLimit-Remaining
     qb::log::point("Ratelimit remaining: ", res["X-RateLimit-Remaining"]);
