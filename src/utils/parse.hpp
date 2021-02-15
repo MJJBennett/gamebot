@@ -4,6 +4,12 @@
 #include <string>
 #include <tuple>
 #include <vector>
+#include <optional>
+
+namespace qb::api
+{
+struct Emoji;
+}
 
 namespace qb::parse
 {
@@ -84,6 +90,38 @@ inline std::string concatenate_quoted(std::vector<std::string> strs, std::string
     return ret.substr(0, ret.size() - sep.size());
 }
 
+inline std::optional<std::string> emote_snowflake(const std::string& full_emote) {
+    if (full_emote.size() == 0) return {};
+    if (full_emote[0] & 0x10000000) return full_emote;
+    auto sf_begin = std::find_if(full_emote.rbegin(), full_emote.rend(), isdigit);    
+    if (sf_begin == full_emote.rend()) return {};
+    auto sf_end = std::find_if(sf_begin, full_emote.rend(), [](char c) {return !isdigit(c);});
+    const auto res = std::string{sf_end.base(), sf_begin.base()};
+    if (res.size() < 4) return {};
+    // now we need the name, apparently
+    const auto name = std::string{full_emote.begin() + 2, sf_end.base()};
+    return name + res;
+}
+
+inline std::string get_trailingest_digits(const std::string& s) {
+    // this function probably does work correctly
+    auto b = std::find_if(s.rbegin(), s.rend(), isdigit);    
+    if (b == s.rend()) return {};
+    auto sf_end = std::find_if(b, s.rend(), [](char c) {return !isdigit(c);});
+    const auto res = std::string{sf_end.base(), b.base()};
+    return res;
+}
+
+inline bool compare_emotes(const std::string& l, const std::string& r) {
+    // this function is ALMOST guaranteed to not work properly
+    // just, you know, just saying
+    const auto dr = get_trailingest_digits(r);
+    const auto dl = get_trailingest_digits(l);
+    if (dr == dl) return true;
+    return l == r;
+}
+
+bool compare_emotes(const std::string& s, const qb::api::Emoji& e);
 } // namespace qb::parse
 
 #endif // PARSE_HPP

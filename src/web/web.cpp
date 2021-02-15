@@ -1,8 +1,9 @@
 #include "web.hpp"
 
 #include "../utils/debug.hpp"
-#include "strings.hpp"
 #include "../utils/utils.hpp"
+#include "strings.hpp"
+#include "utils/json_utils.hpp"
 #include <boost/asio/connect.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/error.hpp>
@@ -11,8 +12,8 @@
 #include <boost/beast/websocket.hpp>
 #include <boost/beast/websocket/ssl.hpp>
 #include <boost/thread.hpp>
-#include <thread>
 #include <numeric>
+#include <thread>
 namespace beast     = boost::beast;
 namespace http      = beast::http;
 namespace asio      = boost::asio;
@@ -224,12 +225,12 @@ nlohmann::json web::context::post(Endpoint ep, const std::string& specifier, con
     // If we're using interactions, we don't need the response.
     if (ep == Endpoint::interactions)
     {
-        if (debug_) qb::log::point("Interaction response body:\n", res.body());
         return {};
     }
+    if (debug_) qb::log::point("Response body:\n", res.body());
 
     // The relevant field is: X-RateLimit-Remaining
-    qb::log::point("Ratelimit remaining: ", res["X-RateLimit-Remaining"]);
+    qb::log::point("POST Ratelimit remaining: ", res["X-RateLimit-Remaining"]);
     const auto ratelimit_remaining = std::stoi(std::string(res["X-RateLimit-Remaining"]));
     if (ratelimit_remaining == 0)
     {
@@ -238,5 +239,165 @@ nlohmann::json web::context::post(Endpoint ep, const std::string& specifier, con
         qb::log::point("Finished self ratelimiting.");
     }
 
-    return nlohmann::json::parse(res.body());
+    return qb::json_utils::parse_safe(res.body());
+}
+
+nlohmann::json web::context::put(const EndpointURI& uri, const std::string& body)
+{
+    assert(initialized_);
+
+    qb::log::scope<std::string> slg("[HTTP PUT request creation start.]");
+    // Set up an HTTP POST request message
+    http::request<http::string_body> req{http::verb::put, uri, qb::http_version};
+    req.set(http::field::host, qb::urls::base);
+    req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
+    req.set(http::field::authorization, "Bot " + qb::detail::get_bot_token());
+    req.body() = body;
+    req.set(http::field::content_type, "application/json");
+    req.set(http::field::content_length, std::to_string(body.size()));
+    req.prepare_payload();
+    slg += "\nSending the following request:\n";
+    std::stringstream s;
+    s << req;
+    slg += s.str();
+
+    // Send the HTTP request to the remote host
+    http::write(stream_, req);
+
+    // This buffer is used for reading and must be persisted
+    boost::beast::flat_buffer buffer;
+
+    // Declare a container to hold the response
+    http::response<http::string_body> res;
+
+    // Receive the HTTP response
+    slg += ("\nReceiving PUT response.");
+    try
+    {
+        http::read(stream_, buffer, res);
+    }
+    catch (const std::exception& e)
+    {
+        qb::log::warn("Got error: ", e.what(), " while reading the response to a POST request.");
+        if (!failed_)
+        {
+            if (!debug_) slg.clear();
+            failed_ = true;
+            // It's possible our stream has somehow become disconnected
+            // Instead of instantly erroring, let's set the fail check,
+            // reinitialize and try again.
+            shutdown();
+            stream_ = boost::beast::ssl_stream<boost::beast::tcp_stream>{ioc_, ctx_};
+            initialize();
+            return put(uri, body);
+        }
+        else
+        {
+            // Request failed twice in a row, could be a network issue.
+            // In the future, this could be a longer timeout.
+            throw e;
+        }
+    }
+    failed_ = false;
+    if (!debug_) slg.clear();
+
+    // for (auto const& field : res) qb::log::point("field: ", field.name_string(), " | value: ", field.value());
+
+    // If we're using interactions, we don't need the response.
+    if (debug_) qb::log::point("Response body:\n", res.body());
+
+    // The relevant field is: X-RateLimit-Remaining
+    if (res.find("X-RateLimit-Remaining") != res.end())
+    {
+        qb::log::point("PUT Ratelimit remaining: ", res["X-RateLimit-Remaining"]);
+        const auto ratelimit_remaining = std::stoi(std::string(res["X-RateLimit-Remaining"]));
+        if (ratelimit_remaining == 0)
+        {
+            qb::log::warn("Hit ratelimit! Self ratelimiting...");
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            qb::log::point("Finished self ratelimiting.");
+        }
+    }
+
+    return qb::json_utils::parse_safe(res.body());
+}
+
+nlohmann::json web::context::del(const std::string& uri)
+{
+    assert(initialized_);
+
+    qb::log::scope<std::string> slg("[HTTP DELETE request creation start.]");
+    // Set up an HTTP POST request message
+    http::request<http::string_body> req{http::verb::delete_, uri, qb::http_version};
+    req.set(http::field::host, qb::urls::base);
+    req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
+    req.set(http::field::authorization, "Bot " + qb::detail::get_bot_token());
+    req.body() = "";
+    req.set(http::field::content_type, "application/json");
+    req.set(http::field::content_length, std::to_string(0));
+    req.prepare_payload();
+    slg += "\nSending the following request:\n";
+    std::stringstream s;
+    s << req;
+    slg += s.str();
+
+    // Send the HTTP request to the remote host
+    http::write(stream_, req);
+
+    // This buffer is used for reading and must be persisted
+    boost::beast::flat_buffer buffer;
+
+    // Declare a container to hold the response
+    http::response<http::string_body> res;
+
+    // Receive the HTTP response
+    slg += ("\nReceiving POST response.");
+    try
+    {
+        http::read(stream_, buffer, res);
+    }
+    catch (const std::exception& e)
+    {
+        qb::log::warn("Got error: ", e.what(), " while reading the response to a POST request.");
+        if (!failed_)
+        {
+            if (!debug_) slg.clear();
+            failed_ = true;
+            // It's possible our stream has somehow become disconnected
+            // Instead of instantly erroring, let's set the fail check,
+            // reinitialize and try again.
+            shutdown();
+            stream_ = boost::beast::ssl_stream<boost::beast::tcp_stream>{ioc_, ctx_};
+            initialize();
+            return del(uri);
+        }
+        else
+        {
+            // Request failed twice in a row, could be a network issue.
+            // In the future, this could be a longer timeout.
+            throw e;
+        }
+    }
+    failed_ = false;
+    if (!debug_) slg.clear();
+
+    // for (auto const& field : res) qb::log::point("field: ", field.name_string(), " | value: ", field.value());
+
+    // If we're using interactions, we don't need the response.
+    if (debug_) qb::log::point("Response body:\n", res.body());
+
+    // The relevant field is: X-RateLimit-Remaining
+    if (res.find("X-RateLimit-Remaining") != res.end())
+    {
+        qb::log::point("DELETE Ratelimit remaining: ", res["X-RateLimit-Remaining"]);
+        const auto ratelimit_remaining = std::stoi(std::string(res["X-RateLimit-Remaining"]));
+        if (ratelimit_remaining == 0)
+        {
+            qb::log::warn("Hit ratelimit! Self ratelimiting...");
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            qb::log::point("Finished self ratelimiting.");
+        }
+    }
+
+    return qb::json_utils::parse_safe(res.body());
 }

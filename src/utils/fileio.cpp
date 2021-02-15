@@ -98,6 +98,8 @@ std::vector<std::string> qb::fileio::get_set(const std::string& set)
 
     auto j = skribbl::get_data();
 
+    if (j.find(set) == j.end()) return {"null"};
+
     return j.at(set).get<std::vector<std::string>>();
 }
 
@@ -137,12 +139,19 @@ struct emote_cache
         return qb::config::default_emote();
     }
 
+    [[nodiscard]] bool contains(const std::string& lookup)
+    {
+        if (!valid) reload();
+        return emote_map.find(lookup) != emote_map.end();
+    }
+
     void reload()
     {
         std::ifstream is(qb::config::emote_data_file());
         if (!is)
         {
             // Couldn't open, assume the file doesn't exist yet.
+            qb::log::warn("Could not open emote data file.");
             return;
         }
         std::string emote_mapping;
@@ -156,8 +165,14 @@ struct emote_cache
                 qb::log::warn("Invalid emote mapping found while reloading at line ", line, ": ", emote_mapping);
                 continue;
             }
-            emote_map.emplace(std::string{emote_mapping.begin(), it},
-                              std::string{it + 1, emote_mapping.end()});
+            auto name  = std::string{emote_mapping.begin(), it};
+            auto emote = std::string{it + 1, emote_mapping.end()};
+            if (emote_map.find(name) != emote_map.end())
+            {
+                emote_map[name] = std::move(emote);
+            }
+            else
+                emote_map.emplace(std::move(name), std::move(emote));
         }
     }
 
@@ -167,7 +182,21 @@ private:
 
 std::string qb::fileio::get_emote(std::string name)
 {
-    return get_emote_cache().at(name);
+    auto& cache = get_emote_cache();
+    if (!cache.contains(name)) return "none";
+    return cache.at(name);
+}
+
+std::vector<std::string> qb::fileio::get_emotes(const std::vector<std::string>& names)
+{
+    std::vector<std::string> res;
+    for (const auto& name : names)
+    {
+        // For now. This is bad. In the future, we should REALLY
+        // just return the emotes, and not this.
+        res.emplace_back(name + ": " + get_emote(name));
+    }
+    return res;
 }
 
 emote_cache& get_emote_cache()

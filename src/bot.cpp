@@ -1,8 +1,8 @@
 #include "bot.hpp"
 
+#include "components/games/hangman.hpp"
 #include "components/messages.hpp"
 #include "components/sentiment.hpp"
-#include "components/games/hangman.hpp"
 #include "utils/debug.hpp"
 #include "utils/fileio.hpp"
 #include "utils/json_utils.hpp"
@@ -58,6 +58,10 @@ void qb::Bot::handle_event(const json& payload)
         if (log_loud_) qb::log::point("A message was created.");
         // qb::log::data("Message", payload.dump(2));
 
+        // We make callbacks right away.
+        if (j::has_path(payload, "d", "id"))
+            execute_callbacks(*this, payload["d"]["id"], payload["d"], message_id_callbacks_);
+
         if (is_identity(payload))
         {
             qb::log::point("Ignoring self message create.");
@@ -78,7 +82,7 @@ void qb::Bot::handle_event(const json& payload)
                 print(cmd, channel);
             else if (startswith(cmd, "queue "))
                 queue(cmd, payload["d"]);
-            else if (startswith(cmd, "s"))
+            else if (startswith(cmd, "store"))
                 store(cmd, channel);
             else if (startswithword(cmd, "online"))
                 send(qb::messages::online(), channel);
@@ -100,6 +104,8 @@ void qb::Bot::handle_event(const json& payload)
                 web_ctx_->debug_mode(false);
             else if (startswithword(cmd, "recall"))
                 recall(cmd, channel);
+            else if (startswithword(cmd, "db:get_emotes"))
+                recall_emote(cmd, channel);
             else if (startswith(cmd, "conf"))
                 configure(cmd, payload["d"]);
             else if (startswithword(cmd, "assign"))
@@ -145,25 +151,13 @@ void qb::Bot::handle_event(const json& payload)
     {
         qb::log::point("A ready payload was sent.");
     }
-}
-
-void qb::Bot::send(std::string msg, std::string channel)
-{
-    if (msg.size() > 2000)
-    {
-        send("I can't do that. [Message length too large: " + std::to_string(msg.size()) +
-                 " - Must be 2000 or less.]",
-             channel);
-        return;
+    else if (et == "MESSAGE_REACTION_ADD") {
+        qb::log::point("A reaction was added to a message.");
+        auto msg = api::Reaction::create(payload["d"]);
+        // TODO should really just be passing the message...
+        qb::log::point("Execute relevant callbacks.");
+        execute_callbacks(*this, msg.message_id, payload["d"], message_reaction_callbacks_);
     }
-    json msg_json{{"content", msg}};
-    const auto resp = web_ctx_->post(web::Endpoint::channels, channel, msg_json.dump());
-    if (!identity_)
-    {
-        identity_ = resp["author"]["id"];
-        qb::log::point("Setting identity to: ", *identity_);
-    }
-    if (log_loud_) qb::log::data("Response", resp.dump(2));
 }
 
 bool qb::Bot::is_identity(const nlohmann::json& msg)
@@ -178,6 +172,57 @@ bool qb::Bot::is_identity(const nlohmann::json& msg)
         qb::log::err("Caught some error ", e.what());
     }
     return false;
+}
+
+bool qb::Bot::is_identity(const api::Message& message)
+{
+    if (!identity_) return false;
+    return message.user.id == *identity_;
+}
+
+nlohmann::json qb::Bot::send(std::string msg, std::string channel)
+{
+    if (msg.size() > 2000)
+    {
+        send("I can't do that. [Message length too large: " + std::to_string(msg.size()) +
+                 " - Must be 2000 or less.]",
+             channel);
+        return {};
+    }
+    json msg_json{{"content", msg}};
+    const auto resp = web_ctx_->post(web::Endpoint::channels, channel, msg_json.dump());
+    if (!identity_)
+    {
+        identity_ = resp["author"]["id"];
+        qb::log::point("Setting identity to: ", *identity_);
+    }
+    if (log_loud_) qb::log::data("Response", resp.dump(2));
+    return resp;
+}
+
+bool qb::Bot::dispatch_in(ActionCallback action, std::chrono::duration<long> when)
+{
+    // Currently unimplemented. TODO.
+    return false;
+}
+
+// TODO: these functions should be abstracted away similar to execute_callbacks
+void qb::Bot::on_message_id(std::string message_id, qb::ActionCallback action)
+{
+    if (message_id_callbacks_.find(message_id) == message_id_callbacks_.end())
+    {
+        message_id_callbacks_.try_emplace(message_id);
+    }
+    message_id_callbacks_[message_id].emplace_back(std::move(action));
+}
+
+void qb::Bot::on_message_reaction(const api::Message& message, BasicAction<api::Reaction> action)
+{
+    if (message_reaction_callbacks_.find(message.id) == message_reaction_callbacks_.end())
+    {
+        message_reaction_callbacks_.try_emplace(message.id);
+    }
+    message_reaction_callbacks_[message.id].emplace_back(std::move(action));
 }
 
 /*****
@@ -359,7 +404,9 @@ void qb::Bot::recall(const std::string& cmd, const std::string& channel)
 {
     // auto cmd_name   = qb::parse::get_command_name(cmd);
     auto components = qb::parse::split(cmd, ' ');
-    if (components.size() <= 1 || components[1] == "all")
+    // note that the std::string{all} was added due to weird warning
+    // about unspecified results of comparisons. not sure if necessary.
+    if (components.size() <= 1 || components[1] == std::string{"all"})
     {
         qb::log::point("Sending all in recall command.");
         send(qb::parse::concatenate(qb::fileio::get_all(), ","), channel);
@@ -391,6 +438,16 @@ void qb::Bot::configure(const std::string& cmd, const nlohmann::json& data)
     }
 }
 
+void qb::Bot::recall_emote(const std::string& cmd, const std::string& channel)
+{
+    using namespace qb::fileio;
+
+    auto components = qb::parse::split(cmd, ' ');
+    components.erase(components.begin());
+    qb::log::point("Sending some emotes in recall_emote command.");
+    send(qb::parse::concatenate(qb::fileio::get_emotes(components), ", "), channel);
+}
+
 void qb::Bot::assign_emote(const std::string& cmd, const std::string& channel)
 {
     using namespace qb::fileio;
@@ -398,10 +455,13 @@ void qb::Bot::assign_emote(const std::string& cmd, const std::string& channel)
     auto parsed = qb::parse::split(cmd);
     if (parsed.size() != 3)
     {
+        qb::log::point("-> Incorrect number of arguments.");
         send("Arguments to assign must be a single word followed by an emote.", channel);
         return;
     }
+    qb::log::point("-> Registering emote.");
     register_emote(parsed.at(1), parsed.at(2));
+    qb::log::point("-> Registered emote.");
     send("Success! Name " + parsed.at(1) + " registered to emote " + get_emote(parsed.at(1)) + " !", channel);
 }
 
@@ -622,5 +682,4 @@ void qb::Bot::shutdown()
     ws_.reset();
     qb::log::point("Shutdown completed.");
 }
-
 
