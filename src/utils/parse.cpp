@@ -1,6 +1,7 @@
 #include "parse.hpp"
 
 #include "components/config.hpp"
+#include "api/emoji.hpp"
 #include <algorithm>
 #include <cctype>
 
@@ -56,6 +57,15 @@ bool qb::parse::startswithword(const std::string& str, const std::string& start)
 
 std::tuple<std::string, std::vector<std::string>> qb::parse::get_time(std::vector<std::string> to_search)
 {
+    /**
+     * Looking at this function now (13/02/21) 
+     * it seems like this, match(2).1, and match(2).2 are all
+     * tools for parsing time expressions out of strings.
+     * However, none of them seem particularly useful.
+     * It seems like get_time is being used, though, so I suppose
+     * the best approach is to write some unit tests for it and
+     * then improve it for future use.
+     */
     std::vector<std::string> not_matches;
     std::string found{""};
     bool was_found{false};
@@ -191,4 +201,9 @@ std::string qb::parse::get_command_name(std::string str)
     // Assumes cmd_start() has already been removed.
     auto s = std::find_if_not(str.begin(), str.end(), isspace);
     return {s, std::find_if(s, str.end(), isspace)};
+}
+
+bool qb::parse::compare_emotes(const std::string& s, const qb::api::Emoji& e) {
+    if (e.id) return compare_emotes(s, *e.id);
+    return compare_emotes(s, *e.name);
 }

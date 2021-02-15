@@ -5,21 +5,23 @@
 // having this include brought in. (TODO)
 #include <nlohmann/json.hpp>
 
+#include "api.hpp"
 #include "utils/debug.hpp"
 #include "utils/json_utils.hpp"
+#include "user.hpp"
+#include "web/strings.hpp"
 
 namespace qb::api
 {
 using json = nlohmann::json;
-class Message
+struct Message
 {
     Message() = default;
-    Message(const std::string& id, const std::string& channel, const std::string& guild)
-        : id(id), channel(channel), guild(guild)
+    Message(const std::string& id, const std::string& channel, const std::string& guild, User user)
+        : id(id), channel(channel), guild(guild), user(user)
     {
     }
 
-public:
     template <bool safe = false>
     static Message create(const json& source)
     {
@@ -38,14 +40,21 @@ public:
         }
 
         return Message(source["id"], source["channel_id"],
-                       json_utils::def_str(source, "guild_id", ""));
+                       json_utils::def_str(source, "guild_id", ""),
+                       ::qb::api::User::create(source["author"])
+
+                        );
     }
 
-public:
-    // Make these public; there's no reason to have getters/setters.
-    std::string id;
-    std::string channel;
-    std::string guild;
+    std::string endpoint() const
+    {
+        return qb::endpoints::message(channel, id);
+    }
+
+    const std::string id;
+    const std::string channel;
+    const std::string guild;
+    const User user{};
 };
 } // namespace qb::api
 

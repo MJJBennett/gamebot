@@ -64,3 +64,27 @@ TEST(Parse, get_time)
     EXPECT_EQ(time2, "5m");
     EXPECT_EQ(others2.size(), 2);
 }
+
+TEST(Parse, emote_snowflake)
+{
+    const auto res1 = emote_snowflake("<:something:32511>");
+    ASSERT_TRUE(res1);
+    EXPECT_EQ(*res1, "something:32511");
+    EXPECT_NE(*res1, "something::32511");
+
+    /*
+    const auto res2 = emote_snowflake("32511");
+    ASSERT_TRUE(res2);
+    EXPECT_EQ(*res2, "32511");
+    */
+
+    const auto res3 = emote_snowflake("none");
+    ASSERT_FALSE(res3);
+}
+
+TEST(Parse, get_trailingest_digits)
+{
+    ASSERT_EQ(get_trailingest_digits("hello123hello"), std::string{"123"});
+    ASSERT_EQ(get_trailingest_digits("hellohello"), std::string{""});
+    ASSERT_EQ(get_trailingest_digits("he33lo123hello"), std::string{"123"});
+}
