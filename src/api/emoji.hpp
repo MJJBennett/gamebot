@@ -17,7 +17,7 @@ struct Emoji
     Emoji(const std::string& id) : id(id){}
 
     std::string to_string() const {
-        return "ID: " + id + "; Name: " + (name ? *name : std::string{"null"}) + ";";
+        return "ID: " + (id ? *id : std::string{"null"}) + "; Name: " + (name ? *name : std::string{"null"}) + ";";
     }
 
     template <bool safe = false>
@@ -37,11 +37,16 @@ struct Emoji
             // This is why we have optional.
             return Emoji(source["id"], {});
         }
+       
+        if (source["id"].is_null()) {
+            // This is why we have optional.
+            return Emoji({}, source["name"]);
+        }
 
         return Emoji(source["id"], source["name"]);
     }
 
-    const std::string id{};
+    const std::optional<std::string> id{};
     const std::optional<std::string> name{};
 };
 } // namespace qb::api

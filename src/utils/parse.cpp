@@ -1,6 +1,7 @@
 #include "parse.hpp"
 
 #include "components/config.hpp"
+#include "api/emoji.hpp"
 #include <algorithm>
 #include <cctype>
 
@@ -200,4 +201,9 @@ std::string qb::parse::get_command_name(std::string str)
     // Assumes cmd_start() has already been removed.
     auto s = std::find_if_not(str.begin(), str.end(), isspace);
     return {s, std::find_if(s, str.end(), isspace)};
+}
+
+bool qb::parse::compare_emotes(const std::string& s, const qb::api::Emoji& e) {
+    if (e.id) return compare_emotes(s, *e.id);
+    return compare_emotes(s, *e.name);
 }

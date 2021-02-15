@@ -63,7 +63,8 @@ bool execute_callbacks(Bot& bot, const std::string& key, const nlohmann::json& j
     l.erase(std::remove_if(l.begin(), l.end(),
                            [&](auto& cb) {
                                auto res = cb(key, DataType::create(json_data), bot);
-                               return res != qb::Result::Value::PersistCallback;
+                               // TODO we support errors? apparently? probably no good
+                               return *res.val != qb::Result::Value::PersistCallback;
                            }),
             l.end());
 

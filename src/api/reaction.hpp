@@ -47,14 +47,10 @@ struct Reaction
             }
         }
 
+        qb::log::point("Creating a reaction.");
         return Reaction(source["message_id"], source["channel_id"],
-                        json_utils::def<std::optional<std::string>>(source, "guild_id", {}),
+                        json_utils::get_opt<std::string>(source, "guild_id"),
                         ::qb::api::User(source["user_id"]), ::qb::api::Emoji(source["emoji"]));
-    }
-
-    std::string endpoint() const
-    {
-        return qb::endpoints::message(channel, message_id);
     }
 
     const std::string message_id;

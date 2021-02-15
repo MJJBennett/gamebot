@@ -155,7 +155,8 @@ void qb::Bot::handle_event(const json& payload)
         qb::log::point("A reaction was added to a message.");
         auto msg = api::Message::create(payload["d"]);
         // TODO should really just be passing the message...
-        execute_callbacks(msg.id, payload["d"], message_reaction_callbacks_);
+        qb::log::point("Execute relevant callbacks.");
+        execute_callbacks(*this, msg.id, payload["d"], message_reaction_callbacks_);
     }
 }
 

@@ -76,6 +76,9 @@ public: /** Send is a part of our public API currently. */
 
     bool is_identity(const api::Message& message);
 
+    // VERY BAD TODO THIS IS A HACK
+    std::optional<std::string>& idref() { return identity_; }
+
 private:
     /** Command handlers. **/
     void print(const std::string& cmd, const std::string& channel);

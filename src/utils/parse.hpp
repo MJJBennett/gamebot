@@ -6,6 +6,11 @@
 #include <vector>
 #include <optional>
 
+namespace qb::api
+{
+struct Emoji;
+}
+
 namespace qb::parse
 {
 /** Takes a string and returns the command portion of it. **/
@@ -98,6 +103,25 @@ inline std::optional<std::string> emote_snowflake(const std::string& full_emote)
     return name + res;
 }
 
+inline std::string get_trailingest_digits(const std::string& s) {
+    // this function probably does work correctly
+    auto b = std::find_if(s.rbegin(), s.rend(), isdigit);    
+    if (b == s.rend()) return {};
+    auto sf_end = std::find_if(b, s.rend(), [](char c) {return !isdigit(c);});
+    const auto res = std::string{sf_end.base(), b.base()};
+    return res;
+}
+
+inline bool compare_emotes(const std::string& l, const std::string& r) {
+    // this function is ALMOST guaranteed to not work properly
+    // just, you know, just saying
+    const auto dr = get_trailingest_digits(r);
+    const auto dl = get_trailingest_digits(l);
+    if (dr == dl) return true;
+    return l == r;
+}
+
+bool compare_emotes(const std::string& s, const qb::api::Emoji& e);
 } // namespace qb::parse
 
 #endif // PARSE_HPP

@@ -9,11 +9,12 @@
 #include "utils/debug.hpp"
 #include "utils/json_utils.hpp"
 #include "user.hpp"
+#include "web/strings.hpp"
 
 namespace qb::api
 {
 using json = nlohmann::json;
-class Message
+struct Message
 {
     Message() = default;
     Message(const std::string& id, const std::string& channel, const std::string& guild, User user)
@@ -21,7 +22,6 @@ class Message
     {
     }
 
-public:
     template <bool safe = false>
     static Message create(const json& source)
     {
@@ -46,8 +46,11 @@ public:
                         );
     }
 
-public:
-    // Make these public; there's no reason to have getters/setters.
+    std::string endpoint() const
+    {
+        return qb::endpoints::message(channel, id);
+    }
+
     const std::string id;
     const std::string channel;
     const std::string guild;

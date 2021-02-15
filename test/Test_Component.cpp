@@ -18,7 +18,7 @@ public:
     qb::Result action_two(const std::string& cmd, const api::Message& msg, Bot& bot){
         return qb::Result::ok();}
 
-    void register_actions(Actions& actions) override
+    void register_actions(Actions<>& actions) override
     {
         using namespace std::placeholders;
         register_all(
@@ -32,7 +32,7 @@ TEST(Component, Register)
 {
     TestComponent test;
 
-    ::qb::Actions actions;
+    ::qb::Actions<> actions;
 
     test.register_actions(actions);
 
@@ -43,7 +43,7 @@ TEST(Component, Callback)
 {
     TestComponent test;
 
-    ::qb::Actions actions;
+    ::qb::Actions<> actions;
 
     test.register_actions(actions);
 

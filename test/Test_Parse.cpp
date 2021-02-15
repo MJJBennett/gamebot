@@ -81,3 +81,10 @@ TEST(Parse, emote_snowflake)
     const auto res3 = emote_snowflake("none");
     ASSERT_FALSE(res3);
 }
+
+TEST(Parse, get_trailingest_digits)
+{
+    ASSERT_EQ(get_trailingest_digits("hello123hello"), std::string{"123"});
+    ASSERT_EQ(get_trailingest_digits("hellohello"), std::string{""});
+    ASSERT_EQ(get_trailingest_digits("he33lo123hello"), std::string{"123"});
+}
