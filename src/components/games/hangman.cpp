@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <functional>
 
-void qb::Hangman::register_actions(Actions& actions)
+void qb::Hangman::register_actions(Actions<>& actions)
 {
     using namespace std::placeholders;
     register_all(

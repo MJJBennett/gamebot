@@ -45,6 +45,7 @@ public:
     nlohmann::json post(Endpoint, const std::vector<std::string>& specifiers, const std::string& body);
 
     nlohmann::json put(const EndpointURI& uri, const std::string& body);
+    nlohmann::json del(const std::string& uri);
 
     // Get a pointer to this application's io_context.
     boost::asio::io_context* ioc_ptr()

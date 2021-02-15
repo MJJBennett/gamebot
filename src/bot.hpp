@@ -1,6 +1,7 @@
 #ifndef BOT_HPP
 #define BOT_HPP
 
+#include "api/reaction.hpp"
 #include "components/action.hpp"
 #include "components/queue.hpp"
 #include "web/web.hpp"
@@ -68,9 +69,12 @@ public: /** Send is a part of our public API currently. */
     bool dispatch_in(ActionCallback action, std::chrono::duration<long> when);
 
     void on_message_id(std::string message_id, ActionCallback action);
+    void on_message_reaction(const api::Message& message, BasicAction<api::Reaction> action);
 
     // scary, will be removed one day
     web::context* get_context() { return web_ctx_; }
+
+    bool is_identity(const api::Message& message);
 
 private:
     /** Command handlers. **/
@@ -88,8 +92,6 @@ private:
     void handle_queue_timeout(const std::string& message_id, const boost::system::error_code& error);
 
     bool is_identity(const nlohmann::json& data);
-
-    bool execute_callbacks(const std::string& key, const nlohmann::json& json_data, MultiActions& callbacks);
 
 private:
     std::optional<web::WSWrapper> ws_;                 // WebSocket connection
@@ -114,12 +116,14 @@ private:
     std::unordered_map<std::string, qb::queue> queues_; // Our actual queues.
 
     // Hashmap of callbacks; these are our commands.
-    ::qb::Actions actions_;
+    ::qb::Actions<api::Message> actions_;
 
     /**
      * Public API features.
      */
-    ::qb::MultiActions message_id_callbacks_;
+    ::qb::MultiActions<api::Message> message_id_callbacks_;
+
+    ::qb::MultiActions<api::Reaction> message_reaction_callbacks_;
 
 private:
     // Heartbeat data (opcode 1). Sent across WebSocket connection at regular intervals.

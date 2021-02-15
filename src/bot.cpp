@@ -60,7 +60,7 @@ void qb::Bot::handle_event(const json& payload)
 
         // We make callbacks right away.
         if (j::has_path(payload, "d", "id"))
-            execute_callbacks(payload["d"]["id"], payload["d"], message_id_callbacks_);
+            execute_callbacks(*this, payload["d"]["id"], payload["d"], message_id_callbacks_);
 
         if (is_identity(payload))
         {
@@ -151,6 +151,12 @@ void qb::Bot::handle_event(const json& payload)
     {
         qb::log::point("A ready payload was sent.");
     }
+    else if (et == "MESSAGE_REACTION_ADD") {
+        qb::log::point("A reaction was added to a message.");
+        auto msg = api::Message::create(payload["d"]);
+        // TODO should really just be passing the message...
+        execute_callbacks(msg.id, payload["d"], message_reaction_callbacks_);
+    }
 }
 
 bool qb::Bot::is_identity(const nlohmann::json& msg)
@@ -167,17 +173,10 @@ bool qb::Bot::is_identity(const nlohmann::json& msg)
     return false;
 }
 
-bool qb::Bot::execute_callbacks(const std::string& key, const nlohmann::json& json_data, MultiActions& callbacks)
+bool qb::Bot::is_identity(const api::Message& message)
 {
-    if (callbacks.find(key) == callbacks.end()) return false;
-
-    for(auto& cb : callbacks[key]) {
-        auto res = cb(key, api::Message::create(json_data), *this);
-        // TODO if res == or .has PERSIST_CALLBACK we don't delete
-    }
-    callbacks.erase(key); // TODO SEE ABOVE
-
-    return false; // return true when the action wants to not parse as a command, TODO
+    if (!identity_) return false;
+    return message.user.id == *identity_;
 }
 
 nlohmann::json qb::Bot::send(std::string msg, std::string channel)
@@ -206,6 +205,7 @@ bool qb::Bot::dispatch_in(ActionCallback action, std::chrono::duration<long> whe
     return false;
 }
 
+// TODO: these functions should be abstracted away similar to execute_callbacks
 void qb::Bot::on_message_id(std::string message_id, qb::ActionCallback action)
 {
     if (message_id_callbacks_.find(message_id) == message_id_callbacks_.end())
@@ -213,6 +213,15 @@ void qb::Bot::on_message_id(std::string message_id, qb::ActionCallback action)
         message_id_callbacks_.try_emplace(message_id);
     }
     message_id_callbacks_[message_id].emplace_back(std::move(action));
+}
+
+void qb::Bot::on_message_reaction(const api::Message& message, BasicAction<api::Reaction> action)
+{
+    if (message_reaction_callbacks_.find(message.id) == message_reaction_callbacks_.end())
+    {
+        message_reaction_callbacks_.try_emplace(message.id);
+    }
+    message_reaction_callbacks_[message.id].emplace_back(std::move(action));
 }
 
 /*****

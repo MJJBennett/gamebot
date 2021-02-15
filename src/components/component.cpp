@@ -2,8 +2,8 @@
 
 #include "bot.hpp"
 #include "utils/fileio.hpp"
-#include "web/strings.hpp"
 #include "utils/parse.hpp"
+#include "web/strings.hpp"
 
 nlohmann::json qb::Component::send_removable_message(Bot& bot, const std::string& message, const std::string& channel)
 {
@@ -21,6 +21,19 @@ qb::Result qb::Component::add_delete_reaction(const std::string& message_id, con
     {
         bot.get_context()->put(qb::endpoints::reaction(message.channel, message_id, *emote), {});
         qb::log::point("Added remove_message reaction to message ID ", message_id);
+
+        // Now we need to monitor this message and delete it when the remove_message emote
+        // is added as a reaction to the message.
+        bot.on_message_reaction(message, [em=qb::fileio::get_emote("remove_message"), message_id](const std::string&, const api::Reaction& reaction, Bot& bot) {
+                qb::log::point("Checking if reaction: ", reaction.to_string(), " is the correct reaction to remove the message: ", message_id);
+                if (qb::parse::compare_emotes(em, reaction.emoji)) {
+                qb::log::point("Removing message; compared true.");
+                bot.get_context()->del(message.endpoint());
+                return qb::Result::Value::Ok;
+                }
+                return qb::Result::Value::Persist_Action;
+                }); 
+
         return qb::Result::ok();
     }
     // TODO return bad result

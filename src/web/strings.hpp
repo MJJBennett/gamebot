@@ -36,6 +36,9 @@ const std::string bot       = "/api/v6/gateway/bot";
 const auto channel_msg      = [](const std::string& channel_id) {
     return "/api/v6/channels/" + channel_id + "/messages";
 };
+const auto message      = [](const std::string& channel_id, const std::string& message_id) {
+    return "/api/v8/channels/" + channel_id + "/messages/" + message_id;
+};
 const auto interaction = [](const std::string& specifier) {
     return "/api/v8/interactions" + specifier;
 };

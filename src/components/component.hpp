@@ -12,7 +12,7 @@ class Bot;
 class Component
 {
 public:
-    virtual void register_actions(Actions& actions) = 0;
+    virtual void register_actions(Actions<>& actions) = 0;
 
 protected:
     // Component provides a number of helper functions for children.

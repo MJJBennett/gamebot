@@ -19,7 +19,7 @@ public:
     qb::Result guess_hangman(const std::string& cmd, const api::Message& msg, Bot& bot);
     qb::Result letter_hangman(const std::string& cmd, const api::Message& msg, Bot& bot);
 
-    void register_actions(Actions& actions) override;
+    void register_actions(Actions<>& actions) override;
 
 private:
     void reset()
