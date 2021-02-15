@@ -32,6 +32,7 @@ private:
 using ActionCallback = std::function<::qb::Result(const std::string&, const api::Message&, qb::Bot&)>;
 
 using Actions = std::unordered_map<std::string, ActionCallback>;
+using MultiActions = std::unordered_map<std::string, std::vector<ActionCallback>>;
 }
 
 #endif // QB_ACTION_HPP
