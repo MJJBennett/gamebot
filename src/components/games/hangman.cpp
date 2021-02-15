@@ -29,11 +29,11 @@ qb::Result qb::Hangman::guess_hangman(const std::string& cmd, const api::Message
     const auto guess = qb::parse::trim(std::string(std::find(cmd.begin(), cmd.end(), ' '), cmd.end()));
     if (guess_word(guess))
     {
-        bot.send("You are correct! The word is " + word_ + "! Game ending...", channel);
+        bot.send(msg.user.username.value_or("That") + " is correct! The word is " + word_ + "! Game ending...", channel);
         reset();
         return qb::Result::ok();
     }
-    bot.send("That is not the correct word! Ouch!", channel);
+    send_removable_message(bot, "That is not the correct word! Ouch!", channel);
     return qb::Result::ok();
 }
 
@@ -43,7 +43,7 @@ qb::Result qb::Hangman::run_hangman(const std::string& cmd, const api::Message& 
     const auto& channel = msg.channel;
     if (!guessed_letters_.empty())
     {
-        bot.send("A hangman game is already in progress!", channel);
+        send_removable_message(bot, "A hangman game is already in progress!", channel);
         return qb::Result::ok();
     }
     // choose a random word
@@ -53,7 +53,7 @@ qb::Result qb::Hangman::run_hangman(const std::string& cmd, const api::Message& 
     word_ = *qb::select_randomly(words.begin(), words.end());
     std::transform(word_.begin(), word_.end(), word_.begin(), tolower);
     guessed_letters_ = " ";
-    bot.send("[Hangman] `" + str() + "`", channel);
+    send_removable_message(bot, "[Hangman] `" + str() + "`", channel);
     qb::log::point("Finished initializing a hangman game.");
     return qb::Result::ok();
 }
@@ -63,14 +63,14 @@ qb::Result qb::Hangman::letter_hangman(const std::string& cmd, const api::Messag
     const auto& channel = msg.channel;
     if (guessed_letters_.empty())
     {
-        bot.send("A hangman game is not currently in progress!", channel);
+        send_removable_message(bot, "A hangman game is not currently in progress!", channel);
         return qb::Result::ok();
     }
     const auto guess = qb::parse::trim(std::string(std::find(cmd.begin(), cmd.end(), ' '), cmd.end()));
     auto letters     = qb::parse::concatenate(qb::parse::split(guess), "");
     std::transform(letters.begin(), letters.end(), letters.begin(), tolower);
     guessed_letters_ += letters;
-    bot.send("[Hangman] `" + str() + "`", channel);
+    send_removable_message(bot, "[Hangman] `" + str() + "`", channel);
     return qb::Result::ok();
 }
 
