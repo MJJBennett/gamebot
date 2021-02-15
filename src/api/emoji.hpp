@@ -23,6 +23,7 @@ struct Emoji
     template <bool safe = false>
     static Emoji create(const nlohmann::json& source)
     {
+        // https://discord.com/developers/docs/resources/emoji#emoji-object
         using namespace qb::json_utils;
         if constexpr (safe)
         {
