@@ -280,7 +280,7 @@ nlohmann::json web::context::put(const EndpointURI& uri, const std::string& body
         qb::log::warn("Got error: ", e.what(), " while reading the response to a POST request.");
         if (!failed_)
         {
-            slg.clear();
+            if (!debug_) slg.clear();
             failed_ = true;
             // It's possible our stream has somehow become disconnected
             // Instead of instantly erroring, let's set the fail check,
@@ -298,7 +298,7 @@ nlohmann::json web::context::put(const EndpointURI& uri, const std::string& body
         }
     }
     failed_ = false;
-    slg.clear();
+    if (!debug_) slg.clear();
 
     // for (auto const& field : res) qb::log::point("field: ", field.name_string(), " | value: ", field.value());
 

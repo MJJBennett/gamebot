@@ -23,7 +23,7 @@ qb::Result qb::Hangman::guess_hangman(const std::string& cmd, const api::Message
     const auto& channel = msg.channel;
     if (guessed_letters_.empty())
     {
-        bot.send("A hangman game is not currently in progress!", channel);
+        send_removable_message(bot, "A hangman game is not currently in progress!", channel);
         return qb::Result::ok();
     }
     const auto guess = qb::parse::trim(std::string(std::find(cmd.begin(), cmd.end(), ' '), cmd.end()));

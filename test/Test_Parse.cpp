@@ -64,3 +64,17 @@ TEST(Parse, get_time)
     EXPECT_EQ(time2, "5m");
     EXPECT_EQ(others2.size(), 2);
 }
+
+TEST(Parse, emote_snowflake)
+{
+    const auto res1 = emote_snowflake("<:something:32511>");
+    ASSERT_TRUE(res1);
+    EXPECT_EQ(*res1, "32511");
+
+    const auto res2 = emote_snowflake("32511");
+    ASSERT_TRUE(res2);
+    EXPECT_EQ(*res2, "32511");
+
+    const auto res3 = emote_snowflake("none");
+    ASSERT_FALSE(res3);
+}

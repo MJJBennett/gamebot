@@ -394,7 +394,9 @@ void qb::Bot::recall(const std::string& cmd, const std::string& channel)
 {
     // auto cmd_name   = qb::parse::get_command_name(cmd);
     auto components = qb::parse::split(cmd, ' ');
-    if (components.size() <= 1 || components[1] == "all")
+    // note that the std::string{all} was added due to weird warning
+    // about unspecified results of comparisons. not sure if necessary.
+    if (components.size() <= 1 || components[1] == std::string{"all"})
     {
         qb::log::point("Sending all in recall command.");
         send(qb::parse::concatenate(qb::fileio::get_all(), ","), channel);
