@@ -328,7 +328,7 @@ nlohmann::json web::context::del(const std::string& uri)
 
     qb::log::scope<std::string> slg("[HTTP DELETE request creation start.]");
     // Set up an HTTP POST request message
-    http::request<http::string_body> req{http::verb::put, uri, qb::http_version};
+    http::request<http::string_body> req{http::verb::delete_, uri, qb::http_version};
     req.set(http::field::host, qb::urls::base);
     req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
     req.set(http::field::authorization, "Bot " + qb::detail::get_bot_token());

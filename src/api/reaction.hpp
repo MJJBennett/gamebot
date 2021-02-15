@@ -50,7 +50,7 @@ struct Reaction
         qb::log::point("Creating a reaction.");
         return Reaction(source["message_id"], source["channel_id"],
                         json_utils::get_opt<std::string>(source, "guild_id"),
-                        ::qb::api::User(source["user_id"]), ::qb::api::Emoji(source["emoji"]));
+                        ::qb::api::User(source["user_id"]), ::qb::api::Emoji::create(source["emoji"]));
     }
 
     const std::string message_id;

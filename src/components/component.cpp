@@ -26,15 +26,20 @@ qb::Result qb::Component::add_delete_reaction(const std::string& message_id, con
         // is added as a reaction to the message.
         bot.on_message_reaction(message, [em = qb::fileio::get_emote("remove_message"), message_id, message](
                                              const std::string&, const api::Reaction& reaction, Bot& bot) {
-            qb::log::point("Checking if reaction: ", reaction.to_string(),
+            qb::log::point("> Checking if reaction: ", reaction.to_string(),
                            " is the correct reaction to remove the message: ", message_id);
             const auto& bID = bot.idref(); // ALSO A HACK
             if (!bot.idref())
             {
+                qb::log::point("> > Did not remove message, as the bot has no ID.");
                 bot.idref() = reaction.user.id;
                 return qb::Result::Value::PersistCallback;
             }
-            if (reaction.user.id == *bot.idref()) return qb::Result::Value::PersistCallback;
+            if (reaction.user.id == *bot.idref())
+            {
+                qb::log::point("> > Did not remove message, as it was sent by the bot.");
+                return qb::Result::Value::PersistCallback;
+            }
             if (qb::parse::compare_emotes(em, reaction.emoji))
             {
                 qb::log::point("Removing message; compared true.");
