@@ -47,9 +47,9 @@ qb::Result qb::QueueComponent::remove_queue(const std::string& cmd, const api::M
     }
     else
     {
-        const auto game = tokens[1];
-        active_queues.erase(game);
-        bot.send("Queue for game of " + game + " removed.", channel);
+        const auto name = tokens[1];
+        active_queues.erase(name);
+        bot.send("Queue called " + name + " removed.", channel);
         return qb::Result::ok();
     }
 }

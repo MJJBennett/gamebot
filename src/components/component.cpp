@@ -13,7 +13,28 @@ nlohmann::json qb::Component::send_removable_message(Bot& bot, const std::string
     bot.on_message_id(resp["id"], bind_action(&qb::Component::add_delete_reaction, this));
     return resp;
 }
+nlohmann::json qb::Component::send_yn_message(Bot& bot, const std::string& message, const std::string& channel)
+{
+    qb::log::point("A queue message.");
+    const auto resp = bot.send(message, channel);
+    if(resp.empty()) return {};
+    bot.on_message_id(resp["id"], bind_action(&qb::Component::add_yn_reaction, this));
+    return resp;
 
+}
+qb::Result qb::Component::add_yn_reaction(const std::string& message_id, const api::Message& message, Bot& bot)
+{
+    if (const auto& yes_emote = qb::parse::emote_snowflake(qb::fileio::get_emote("yes")); yes_emote)
+    {
+        bot.get_context()->put(qb::endpoints::reaction(message.channel, message_id, *yes_emote), {});
+    }
+    if (const auto& no_emote = qb::parse::emote_snowflake(qb::fileio::get_emote("no")); no_emote)
+    {
+        bot.get_context()->put(qb::endpoints::reaction(message.channel, message_id, *no_emote), {});
+    }
+
+    bot.on
+}
 qb::Result qb::Component::add_delete_reaction(const std::string& message_id, const api::Message& message, Bot& bot)
 {
     // temporary until we have proper api wrappers (hah)

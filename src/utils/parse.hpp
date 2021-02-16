@@ -5,7 +5,7 @@
 #include <tuple>
 #include <vector>
 #include <optional>
-
+#include <algorithm>
 namespace qb::api
 {
 struct Emoji;
