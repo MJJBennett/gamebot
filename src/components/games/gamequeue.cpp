@@ -34,8 +34,8 @@ qb::Result qb::QueueComponent::add_queue(const std::string& cmd, const api::Mess
         const auto game = tokens[1];
         const auto name = tokens[2];
         const auto max_size = std::stoi(tokens[3]);
-
-        active_queues.emplace(msg.id, Queue(name, msg, game, max_size));
+        qb::log::point("initial msg.id: " + msg.id);
+        //active_queues.emplace(msg.id, Queue(name, msg, game, max_size));
         send_yn_message(bot, "Queueing a game of " + game + " called " + name + " with 0 players. (Max " + tokens[3] + ")", channel);
         return qb::Result::ok();
     }
@@ -97,12 +97,19 @@ qb::Result qb::QueueComponent::add_yn_reaction( const std::string& message_id, c
             }
             if (qb::parse::compare_emotes(em, reaction.emoji))
             {
-
-                active_queues.at(message_id).users.push_back(reaction.user.id);
+                qb::log::point("message_id: " + message_id);
+                qb::log::point("message.id: " + message.id);
+                //active_queues.at(message.id).users.push_back(reaction.user.id);
                 qb::log::point("Editing message");
                 nlohmann::json new_message;
-                new_message["content"] = active_queues.at(message_id).to_str();
-                bot.get_context()->patch(message.endpoint(), new_message );
+                if(active_queues.empty())
+                {
+                    qb::log::point("Oh no, active queues is empty");
+                }
+                qb::log::point("message_id: " + message_id);
+                qb::log::point("message.id: " + message.id);
+                new_message["content"] = "wow";
+                bot.get_context()->patch(message.endpoint(), "hello");
                 return qb::Result::Value::Ok;
             }
             return qb::Result::Value::PersistCallback;
