@@ -62,7 +62,7 @@ qb::Result qb::QueueComponent::remove_queue(const std::string& cmd, const api::M
 nlohmann::json qb::QueueComponent::send_yn_message(Queue& queue, Bot& bot, const std::string& message, const std::string& channel)
 {
     qb::log::point("A queue message.");
-    const auto resp = bot.send(message, channel);
+    const auto resp = send_removable_message(bot, message, channel);
     if(resp.empty()) return {};
     active_queues.emplace(resp["id"], queue);
     bot.on_message_id(resp["id"], bind_action(&qb::QueueComponent::add_yn_reaction, this));
@@ -110,7 +110,7 @@ qb::Result qb::QueueComponent::add_yn_reaction( const std::string& message_id, c
                 nlohmann::json new_message;
                 new_message["content"] = active_queues.at(message.id).to_str();
                 bot.get_context()->patch(message.endpoint(), new_message.dump());
-                return qb::Result::Value::Ok;
+                return qb::Result::Value::PersistCallback;
             }
             return qb::Result::Value::PersistCallback;
         });
