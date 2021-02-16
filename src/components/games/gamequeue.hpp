@@ -28,7 +28,7 @@ class QueueComponent : public Component
 public:
     qb::Result add_queue(const std::string& cmd, const api::Message& msg, Bot& bot);
     qb::Result remove_queue(const std::string& cmd, const api::Message& msg, Bot& bot);
-    nlohmann::json send_yn_message(Bot& bot, const std::string& message, const std::string& channel);
+    nlohmann::json send_yn_message(Queue& queue, Bot& bot, const std::string& message, const std::string& channel);
     void register_actions(Actions<>& actions) override;
     
 private:
