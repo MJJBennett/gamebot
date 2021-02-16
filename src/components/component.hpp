@@ -33,7 +33,7 @@ protected:
     }
 
     nlohmann::json send_removable_message(Bot& bot, const std::string& message, const std::string& channel);
-    nlohmann::json send_yn_message(Bot& bot, const std::string& message, const std::string& channel);
+    
 
     template<typename Func, typename Class>
     ActionCallback bind_action(Func&& func, Class* subclass) {
@@ -43,7 +43,7 @@ protected:
 
 private:
     qb::Result add_delete_reaction(const std::string& message_id, const api::Message&, Bot& bot);
-    qb::Result add_yn_reaction(const std::string& message_id, const api::Message& message, Bot& bot);
+    
 };
 
 } // namespace qb
