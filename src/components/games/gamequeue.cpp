@@ -5,6 +5,11 @@
 #include "utils/parse.hpp"
 #include "utils/utils.hpp"
 
+std::string qb::Queue::to_str()
+{
+    return "Queueing a game of " + game_ + " called " + name_ + " with " + std::to_string(users.size())+" players. (Max " + std::to_string(max_size_) + ")";
+}
+
 void qb::QueueComponent::register_actions(Actions<>& actions)
 {
     using namespace std::placeholders;
@@ -30,8 +35,8 @@ qb::Result qb::QueueComponent::add_queue(const std::string& cmd, const api::Mess
         const auto name = tokens[2];
         const auto max_size = std::stoi(tokens[3]);
 
-        active_queues.emplace(name, Queue(name, msg.guild, msg.channel, game, max_size));
-        send_yn_message(bot, name, "Queueing a game of " + game + " called " + name + " with 0 players. (Max " + tokens[3] + ")", channel);
+        active_queues.emplace(msg.id, Queue(name, msg, game, max_size));
+        send_yn_message(bot, "Queueing a game of " + game + " called " + name + " with 0 players. (Max " + tokens[3] + ")", channel);
         return qb::Result::ok();
     }
 }
@@ -48,13 +53,13 @@ qb::Result qb::QueueComponent::remove_queue(const std::string& cmd, const api::M
     else
     {
         const auto name = tokens[1];
-        active_queues.erase(name);
+        active_queues.erase(msg.id);
         bot.send("Queue called " + name + " removed.", channel);
         return qb::Result::ok();
     }
 }
 
-nlohmann::json qb::QueueComponent::send_yn_message(Bot& bot, const std::string& name, const std::string& message, const std::string& channel)
+nlohmann::json qb::QueueComponent::send_yn_message(Bot& bot, const std::string& message, const std::string& channel)
 {
     qb::log::point("A queue message.");
     const auto resp = bot.send(message, channel);
@@ -63,7 +68,7 @@ nlohmann::json qb::QueueComponent::send_yn_message(Bot& bot, const std::string& 
     return resp;
 
 }
-qb::Result qb::QueueComponent::add_yn_reaction(const std::string& name, const std::string& message_id, const api::Message& message, Bot& bot)
+qb::Result qb::QueueComponent::add_yn_reaction( const std::string& message_id, const api::Message& message, Bot& bot)
 {
     if (const auto& yes_emote = qb::parse::emote_snowflake(qb::fileio::get_emote("yes")); yes_emote)
     {
@@ -75,7 +80,7 @@ qb::Result qb::QueueComponent::add_yn_reaction(const std::string& name, const st
     }
 
     bot.on_message_reaction(message, [this, em = qb::fileio::get_emote("yes"), message_id, message](
-                                             const std::string&, const api::Reaction& reaction, Bot& bot, std::string& name) {
+                                             const std::string&, const api::Reaction& reaction, Bot& bot) {
             qb::log::point("> Checking if reaction: ", reaction.to_string(),
                            " is the correct reaction to edit the message: ", message_id);
             const auto& bID = bot.idref(); // ALSO A HACK
@@ -92,12 +97,15 @@ qb::Result qb::QueueComponent::add_yn_reaction(const std::string& name, const st
             }
             if (qb::parse::compare_emotes(em, reaction.emoji))
             {
+
+                active_queues.at(message_id).users.push_back(reaction.user.id);
                 qb::log::point("Editing message");
                 nlohmann::json new_message;
-                new_message["content"] = "Queueing a game of " + active_queues[name] + " called " + name + " with 0 players. (Max " + tokens[3] + ")";
+                new_message["content"] = active_queues.at(message_id).to_str();
                 bot.get_context()->patch(message.endpoint(), new_message );
                 return qb::Result::Value::Ok;
             }
             return qb::Result::Value::PersistCallback;
         });
+    return qb::Result::ok();
 }

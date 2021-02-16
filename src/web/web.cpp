@@ -288,7 +288,7 @@ nlohmann::json web::context::patch(const std::string& uri, const std::string& bo
             shutdown();
             stream_ = boost::beast::ssl_stream<boost::beast::tcp_stream>{ioc_, ctx_};
             initialize();
-            return put(uri, body);
+            return patch(uri, body);
         }
         else
         {
