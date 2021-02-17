@@ -245,7 +245,7 @@ nlohmann::json web::context::patch(const std::string& uri, const std::string& bo
 {
     assert(initialized_);
 
-    qb::log::scope<std::string> slg("[HTTP PUT request creation start.]");
+    qb::log::scope<std::string> slg("[HTTP PATCH request creation start.]");
     // Set up an HTTP POST request message
     http::request<http::string_body> req{http::verb::patch, uri, qb::http_version};
     req.set(http::field::host, qb::urls::base);
@@ -270,7 +270,7 @@ nlohmann::json web::context::patch(const std::string& uri, const std::string& bo
     http::response<http::string_body> res;
 
     // Receive the HTTP response
-    slg += ("\nReceiving PUT response.");
+    slg += ("\nReceiving PATCH response.");
     try
     {
         http::read(stream_, buffer, res);
@@ -308,7 +308,7 @@ nlohmann::json web::context::patch(const std::string& uri, const std::string& bo
     // The relevant field is: X-RateLimit-Remaining
     if (res.find("X-RateLimit-Remaining") != res.end())
     {
-        qb::log::point("PUT Ratelimit remaining: ", res["X-RateLimit-Remaining"]);
+        qb::log::point("PATCH Ratelimit remaining: ", res["X-RateLimit-Remaining"]);
         const auto ratelimit_remaining = std::stoi(std::string(res["X-RateLimit-Remaining"]));
         if (ratelimit_remaining == 0)
         {

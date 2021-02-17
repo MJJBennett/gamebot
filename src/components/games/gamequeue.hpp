@@ -7,14 +7,14 @@ namespace qb
 {
 class Queue {
     public:
-    Queue(const std::string name, api::Message message, const std::string game, int max_size) 
+    Queue(const std::string name, const api::Message message, const std::string game, const int max_size) 
         : name_(name), message_(message), game_(game), max_size_(max_size) {}
     
 
-    std::string to_str();
-    std::string name_;
-    api::Message message_;
-    std::string game_;
+    const std::string to_str();
+    const std::string name_;
+    const api::Message message_;
+    const std::string game_;
 
     //contains user_ids currently in queue
     std::vector<std::string> users;

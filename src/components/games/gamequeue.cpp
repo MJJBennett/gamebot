@@ -5,7 +5,7 @@
 #include "utils/parse.hpp"
 #include "utils/utils.hpp"
 
-std::string qb::Queue::to_str()
+const std::string qb::Queue::to_str()
 {
     return "Queueing a game of " + game_ + " called " + name_ + " with " + std::to_string(users.size())+" players. (Max " + std::to_string(max_size_) + ")";
 }
@@ -74,10 +74,6 @@ qb::Result qb::QueueComponent::add_yn_reaction( const std::string& message_id, c
     if (const auto& yes_emote = qb::parse::emote_snowflake(qb::fileio::get_emote("yes")); yes_emote)
     {
         bot.get_context()->put(qb::endpoints::reaction(message.channel, message_id, *yes_emote), {});
-    }
-    if (const auto& no_emote = qb::parse::emote_snowflake(qb::fileio::get_emote("no")); no_emote)
-    {
-        bot.get_context()->put(qb::endpoints::reaction(message.channel, message_id, *no_emote), {});
     }
 
     bot.on_message_reaction(message, [this, em = qb::fileio::get_emote("yes"), message_id, message](
