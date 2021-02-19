@@ -10,7 +10,7 @@ namespace qb
 class Queue
 {
 public:
-    Queue(std::optional<std::string> name, std::optional<std::string> game, int max_size, int time)
+    Queue(std::optional<std::string> name, std::optional<std::string> game, std::optional<int> max_size, std::optional<std::chrono::duration<long>> time)
         : name_(name), game_(game), max_size_(max_size), time_(time)
     {
     }
@@ -31,9 +31,9 @@ public:
     std::vector<std::string> users;
 
     // maximum number of users allowed in queue
-    int max_size_;
+    std::optional<int>  max_size_;
 
-    int time_;
+    std::optional<std::chrono::duration<long>> time_;
 };
 
 class QueueComponent : public Component

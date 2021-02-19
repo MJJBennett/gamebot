@@ -156,7 +156,7 @@ qb::parse::DecomposedCommand qb::parse::decompose_command(const std::string& com
     qb::parse::DecomposedCommand ret;
     auto cmds = split(command);
     if (cmds.size() < 2) return ret;
-    for (auto itr = cmds.begin() + 2; itr != cmds.end(); itr++)
+    for (auto itr = cmds.begin() + 1; itr != cmds.end(); itr++)
     {
         decompose_argument(ret, *itr);
     }

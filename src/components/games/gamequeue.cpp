@@ -7,8 +7,9 @@
 
 std::string qb::Queue::to_str() const
 {
-    return "Queueing a game of " + game_ + " called " + name_ + " with **" +
-           std::to_string(users.size()) + "** players. (Max **" + std::to_string(max_size_) + "**)";
+    std::string max_players = max_size_ ? (" (Max **" + std::to_string(*max_size_) + "**)") : "";
+    return "Queueing a game of " + get_game() + " called " + get_name() + " with **" +
+           std::to_string(users.size()) + "** players." + max_players;
 }
 
 void qb::QueueComponent::register_actions(Actions<>& actions)
@@ -20,10 +21,13 @@ void qb::QueueComponent::register_actions(Actions<>& actions)
 
 qb::Result qb::QueueComponent::add_queue(const std::string& cmd, const api::Message& msg, Bot& bot)
 {
-    const auto& channel                      = msg.channel;
-    auto [args, numeric_args, duration_args] = qb::parse::decompose_command(cmd);
+    const auto& channel = msg.channel;
 
     Queue new_queue = [&]() {
+        auto [args, numeric_args, duration_args] = qb::parse::decompose_command(cmd);
+        qb::log::point("Queue creation: \n\tFound ", args.size(), " arguments\n\tFound ",
+                       numeric_args.size(), " numeric args\n\tFound ", duration_args.size(),
+                       " duration args");
         std::optional<std::string> name;
         std::optional<std::string> game;
         if (args.size() == 1)
@@ -35,24 +39,23 @@ qb::Result qb::QueueComponent::add_queue(const std::string& cmd, const api::Mess
             game = args[0];
             name = args[1];
         }
+        std::optional<int> max_size;
+        if (numeric_args.size() != 0)
+        {
+            max_size = numeric_args[0];
+        }
+        std::optional<std::chrono::duration<long>> time;
+        if (duration_args.size() != 0)
+        {
+            time = duration_args[0];
+        }
+        return Queue(name, game, max_size, time);
     }();
 
-    else
-    {
-        const auto game     = tokens[1];
-        const auto name     = tokens[2];
-        const auto max_size = std::stoi(tokens[3]);
-        const auto time     = std::stoi(tokens[4]);
-        Queue new_queue     = Queue(name, game, max_size, time);
-        auto endpoint       = msg.endpoint();
-        bot.get_context()->del(endpoint);
-        send_yn_message(new_queue, bot,
-                        "Queueing a game of " + game + " called " + name +
-                            " with **0** players. (Max players: " + tokens[3] +
-                            ". Time remaining: " + tokens[4] + ")",
-                        channel);
-        return qb::Result::ok();
-    }
+    auto endpoint = msg.endpoint();
+    bot.get_context()->del(endpoint);
+    send_yn_message(new_queue, bot, new_queue.to_str(), channel);
+    return qb::Result::ok();
 }
 
 nlohmann::json qb::QueueComponent::send_yn_message(Queue& queue,
@@ -112,17 +115,17 @@ qb::Result qb::QueueComponent::add_yn_reaction(const std::string& message_id, co
                 {
                     qb::log::point("Oh no, active queues is empty");
                 }
-                if (active_queues.at(message.id).users.size() == active_queues.at(message_id).max_size_)
+                auto& q     = active_queues.at(message_id);
+                auto& users = active_queues.at(message_id).users;
+                if (q.max_size_ && users.size() == *(q.max_size_))
                 {
-                    auto& users = active_queues.at(message_id).users;
                     std::stringstream ss;
                     for (const auto& i : users)
                     {
                         ss << "<@" << i << "> ";
                     }
-                    ss << "\nQueue finished! Please get ready to play "
-                       << active_queues.at(message.id).game_ << " with "
-                       << active_queues.at(message.id).name_ << ".";
+                    ss << "\nQueue finished! Please get ready to play " << (q.game_ ? *q.game_ : "a game")
+                       << " with " << (q.name_ ? *q.name_ : "friends!") << "!";
                     send_removable_message(bot, ss.str(), message.channel);
                     bot.get_context()->del(message.endpoint());
                     active_queues.erase(message_id);
