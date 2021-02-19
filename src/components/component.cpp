@@ -10,12 +10,13 @@ nlohmann::json qb::Component::send_removable_message(Bot& bot, const std::string
     qb::log::point("Sending a removable message.");
     const auto resp = bot.send(message, channel);
     if (resp.empty()) return {};
-    bot.on_message_id(resp["id"], bind_action(&qb::Component::add_delete_reaction, this));
+    bot.on_message_id(resp["id"], bind_message_action(&qb::Component::add_delete_reaction, this));
     return resp;
 }
 
 qb::Result qb::Component::add_delete_reaction(const std::string& message_id, const api::Message& message, Bot& bot)
 {
+    
     // temporary until we have proper api wrappers (hah)
     if (const auto& emote = qb::parse::emote_snowflake(qb::fileio::get_emote("remove_message")); emote)
     {
@@ -24,8 +25,10 @@ qb::Result qb::Component::add_delete_reaction(const std::string& message_id, con
 
         // Now we need to monitor this message and delete it when the remove_message emote
         // is added as a reaction to the message.
+        
         bot.on_message_reaction(message, [em = qb::fileio::get_emote("remove_message"), message_id, message](
-                                             const std::string&, const api::Reaction& reaction, Bot& bot) {
+                                             const std::string&, const api::Reaction& reaction, Bot& bot, int count) {
+            if(count==0) return qb::Result::Value::PersistCallback;
             qb::log::point("> Checking if reaction: ", reaction.to_string(),
                            " is the correct reaction to remove the message: ", message_id);
             const auto& bID = bot.idref(); // ALSO A HACK

@@ -33,15 +33,21 @@ protected:
     }
 
     nlohmann::json send_removable_message(Bot& bot, const std::string& message, const std::string& channel);
+    
 
     template<typename Func, typename Class>
-    ActionCallback bind_action(Func&& func, Class* subclass) {
+    ActionCallback bind_message_action(Func&& func, Class* subclass) {
         using namespace std::placeholders;
         return std::bind(func, subclass, _1, _2, _3);
     }
-
+    template<typename Func, typename Class>
+    ActionCallback bind_reaction_action(Func&& func, Class* subclass) {
+        using namespace std::placeholders;
+        return std::bind(func, subclass, _1, _2, _3, _4);
+    }
 private:
     qb::Result add_delete_reaction(const std::string& message_id, const api::Message&, Bot& bot);
+    
 };
 
 } // namespace qb
