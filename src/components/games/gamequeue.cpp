@@ -16,8 +16,15 @@ std::string qb::Queue::to_str() const
 void qb::QueueComponent::register_actions(Actions<>& actions)
 {
     using namespace std::placeholders;
-    register_all(actions, std::make_pair("queue", (ActionCallback)std::bind(&qb::QueueComponent::add_queue,
-                                                                            this, _1, _2, _3)));
+    register_all(
+        actions,
+        std::make_pair("queue", (ActionCallback)std::bind(&qb::QueueComponent::add_queue, this, _1, _2, _3)),
+        std::make_pair("db:queue", bind_message_action(
+                                       [](qb::QueueComponent* obj, const std::string&, const api::Message&, Bot&) {
+                                           obj->dump_debug();
+                                           return qb::Result::Value::Ok;
+                                       },
+                                       this)));
 }
 
 qb::Result qb::QueueComponent::add_queue(const std::string& cmd, const api::Message& msg, Bot& bot)
@@ -159,4 +166,11 @@ qb::Result qb::QueueComponent::end_queue(const std::string& message_id, const ap
     bot.get_context()->del(qb::endpoints::message(reaction.channel, message_id));
     active_queues.erase(message_id);
     return qb::Result::Value::Ok;
+}
+
+void qb::QueueComponent::dump_debug() const
+{
+    qb::log::point("Dumping QueueComponent debug information. [START]");
+    qb::log::point("QueueComponent contains ", active_queues.size(), " active queues.");
+    qb::log::point("Finished dumping QueueComponent debug information. [END]");
 }

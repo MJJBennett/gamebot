@@ -48,6 +48,7 @@ public:
     void register_actions(Actions<>& actions) override;
 
     qb::Result end_queue(const std::string& message_id, const api::Reaction reaction, Bot& bot);
+    void dump_debug() const;
 
 private:
     std::unordered_map<std::string, Queue> active_queues;
