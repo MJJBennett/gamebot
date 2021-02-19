@@ -7,7 +7,7 @@
 
 std::string qb::Queue::to_str() const
 {
-    return "Queueing a game of " + game_ + " called " + name_ + " with " + std::to_string(users.size())+" players. (Max " + std::to_string(max_size_) + ")";
+    return "Queueing a game of " + game_ + " called " + name_ + " with **" + std::to_string(users.size()) + "** players. (Max **" + std::to_string(max_size_) + "**)";
 }
 
 void qb::QueueComponent::register_actions(Actions<>& actions)
@@ -34,10 +34,10 @@ qb::Result qb::QueueComponent::add_queue(const std::string& cmd, const api::Mess
         const auto name = tokens[2];
         const auto max_size = std::stoi(tokens[3]);
         const auto time = std::stoi(tokens[4]);
-        Queue new_queue = Queue(name, msg, game, max_size, time);
+        Queue new_queue = Queue(name, game, max_size, time);
         auto endpoint = msg.endpoint();
         bot.get_context()->del(endpoint);
-        send_yn_message(new_queue, bot, "Queueing a game of " + game + " called " + name + " with 0 players. (Max players: " + tokens[3] + ". Time remaining: " + tokens[4] + ")", channel);
+        send_yn_message(new_queue, bot, "Queueing a game of " + game + " called " + name + " with **0** players. (Max players: " + tokens[3] + ". Time remaining: " + tokens[4] + ")", channel);
         return qb::Result::ok();
 
     }
@@ -100,12 +100,13 @@ qb::Result qb::QueueComponent::add_yn_reaction( const std::string& message_id, c
                     {
                         auto& users = active_queues.at(message_id).users;
                         std::stringstream ss;
-                        for (std::vector<std::string>::const_iterator i = users.begin(); i != users.end(); ++i){
-                            ss << "<@" << *i << ">\n";
+                        for (const auto& i: users){
+                            ss << "<@" << i << "> ";
                         }
-                        ss << "Queue finished! Please get ready to play " << active_queues.at(message.id).game_ << " with " <<  active_queues.at(message.id).name_ << ".";
+                        ss << "\nQueue finished! Please get ready to play " << active_queues.at(message.id).game_ << " with " <<  active_queues.at(message.id).name_ << ".";
                         send_removable_message(bot, ss.str(), message.channel);
                         bot.get_context()->del(message.endpoint());
+                        active_queues.erase(message_id);
                         return qb::Result::Value::Ok;
                     }
                 }
