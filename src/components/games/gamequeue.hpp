@@ -4,6 +4,7 @@
 #include "../component.hpp"
 
 #include <optional>
+#include <chrono>
 
 namespace qb
 {
