@@ -15,8 +15,7 @@ void qb::QueueComponent::register_actions(Actions<>& actions)
     using namespace std::placeholders;
     register_all(
         actions,
-        std::make_pair("startqueue", (ActionCallback)std::bind(&qb::QueueComponent::add_queue, this, _1, _2, _3)),
-        std::make_pair("stopqueue", (ActionCallback)std::bind(&qb::QueueComponent::remove_queue, this, _1, _2, _3))
+        std::make_pair("queue", (ActionCallback)std::bind(&qb::QueueComponent::add_queue, this, _1, _2, _3))
     );
 }
 
@@ -36,26 +35,11 @@ qb::Result qb::QueueComponent::add_queue(const std::string& cmd, const api::Mess
         const auto max_size = std::stoi(tokens[3]);
         const auto time = std::stoi(tokens[4]);
         Queue new_queue = Queue(name, msg, game, max_size, time);
+        auto endpoint = msg.endpoint();
+        bot.get_context()->del(endpoint);
         send_yn_message(new_queue, bot, "Queueing a game of " + game + " called " + name + " with 0 players. (Max players: " + tokens[3] + ". Time remaining: " + tokens[4] + ")", channel);
         return qb::Result::ok();
-    }
-}
 
-qb::Result qb::QueueComponent::remove_queue(const std::string& cmd, const api::Message& msg, Bot& bot)
-{
-    const auto& channel = msg.channel;
-    std::vector<std::string> tokens = qb::parse::split(cmd);
-    if(tokens.size() != 2)
-    {
-        bot.send("Incorrect number of parameters given. Proper format : !qb dequeue <name>", channel);
-        return qb::Result::ok();
-    }
-    else
-    {
-        const auto name = tokens[1];
-        active_queues.erase(msg.id);
-        bot.send("Queue called " + name + " removed.", channel);
-        return qb::Result::ok();
     }
 }
 
@@ -111,6 +95,18 @@ qb::Result qb::QueueComponent::add_yn_reaction( const std::string& message_id, c
                     if(active_queues.empty())
                     {
                         qb::log::point("Oh no, active queues is empty");
+                    }
+                    if(active_queues.at(message.id).users.size() == active_queues.at(message_id).max_size_)
+                    {
+                        auto& users = active_queues.at(message_id).users;
+                        std::stringstream ss;
+                        for (std::vector<std::string>::const_iterator i = users.begin(); i != users.end(); ++i){
+                            ss << "<@" << *i << ">\n";
+                        }
+                        ss << "Queue finished! Please get ready to play " << active_queues.at(message.id).game_ << " with " <<  active_queues.at(message.id).name_ << ".";
+                        send_removable_message(bot, ss.str(), message.channel);
+                        bot.get_context()->del(message.endpoint());
+                        return qb::Result::Value::Ok;
                     }
                 }
                 nlohmann::json new_message;
