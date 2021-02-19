@@ -10,7 +10,10 @@ namespace qb
 class Queue
 {
 public:
-    Queue(std::optional<std::string> name, std::optional<std::string> game, std::optional<int> max_size, std::optional<std::chrono::duration<long>> time)
+    Queue(std::optional<std::string> name,
+          std::optional<std::string> game,
+          std::optional<int> max_size,
+          std::optional<std::chrono::duration<long>> time)
         : name_(name), game_(game), max_size_(max_size), time_(time)
     {
     }
@@ -31,7 +34,7 @@ public:
     std::vector<std::string> users;
 
     // maximum number of users allowed in queue
-    std::optional<int>  max_size_;
+    std::optional<int> max_size_;
 
     std::optional<std::chrono::duration<long>> time_;
 };
@@ -43,6 +46,8 @@ public:
     qb::Result remove_queue(const std::string& cmd, const api::Message& msg, Bot& bot);
     nlohmann::json send_yn_message(Queue& queue, Bot& bot, const std::string& message, const std::string& channel);
     void register_actions(Actions<>& actions) override;
+
+    qb::Result end_queue(const std::string& message_id, const api::Reaction reaction, Bot& bot);
 
 private:
     std::unordered_map<std::string, Queue> active_queues;
