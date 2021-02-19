@@ -6,6 +6,8 @@
 #include <vector>
 #include <optional>
 #include <algorithm>
+#include <chrono>
+
 namespace qb::api
 {
 struct Emoji;
@@ -42,12 +44,33 @@ inline bool startswith(const std::string& str, const std::string& start)
 /** Returns whether the first input string starts with the second followed by a non-alphanumeric character. **/
 bool startswithword(const std::string& str, const std::string& start);
 
+/**
+ * !qb queue jackbox quickgame 4 10m
+ * vector<std::string> "queue", "jackbox"
+ * vector<int> 4
+ * vector<std::chrono::duration::seconds> 10
+ */
+struct DecomposedCommand {
+    std::vector<std::string> arguments;
+    std::vector<long> numeric_arguments;
+    std::vector<std::chrono::duration<long>> duration_arguments;
+};
+
+struct SplitNumber {
+    std::optional<long> number;
+    std::string trailing;
+};
+bool is_valid_time_trailer(const std::string& s);
+SplitNumber split_number(const std::string& s);
+void decompose_argument(DecomposedCommand& res, std::string in);
+DecomposedCommand decompose_command(const std::string& command);
+
 std::tuple<std::string, std::vector<std::string>> get_time(std::vector<std::string>);
 std::tuple<std::string, std::vector<std::string>> match(std::string, std::vector<std::string>);
 bool match(std::string, std::string);
 
 template <typename Type, typename Range>
-bool in(Type t, Range range)
+bool in(Type t, const Range& range)
 {
     // Currently an inefficient but functional approach.
     for (const auto maybe_t : range)
