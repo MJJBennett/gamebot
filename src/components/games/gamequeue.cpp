@@ -5,7 +5,7 @@
 #include "utils/parse.hpp"
 #include "utils/utils.hpp"
 
-const std::string qb::Queue::to_str()
+std::string qb::Queue::to_str() const
 {
     return "Queueing a game of " + game_ + " called " + name_ + " with " + std::to_string(users.size())+" players. (Max " + std::to_string(max_size_) + ")";
 }
@@ -24,9 +24,9 @@ qb::Result qb::QueueComponent::add_queue(const std::string& cmd, const api::Mess
 {
     const auto& channel = msg.channel;
     std::vector<std::string> tokens = qb::parse::split(cmd);
-    if( tokens.size() != 4)
+    if( tokens.size() != 5)
     {
-        bot.send("Incorrect number of parameters given. Proper format : !qb queue <game> <queue_name> <max_size>", channel);
+        bot.send("Incorrect number of parameters given. Proper format : !qb queue <game> <queue_name> <max_size> <time>", channel);
         return qb::Result::ok();
     }
     else
@@ -34,9 +34,9 @@ qb::Result qb::QueueComponent::add_queue(const std::string& cmd, const api::Mess
         const auto game = tokens[1];
         const auto name = tokens[2];
         const auto max_size = std::stoi(tokens[3]);
-
-        Queue new_queue = Queue(name, msg, game, max_size);
-        send_yn_message(new_queue, bot, "Queueing a game of " + game + " called " + name + " with 0 players. (Max " + tokens[3] + ")", channel);
+        const auto time = std::stoi(tokens[4]);
+        Queue new_queue = Queue(name, msg, game, max_size, time);
+        send_yn_message(new_queue, bot, "Queueing a game of " + game + " called " + name + " with 0 players. (Max players: " + tokens[3] + ". Time remaining: " + tokens[4] + ")", channel);
         return qb::Result::ok();
     }
 }
@@ -65,7 +65,7 @@ nlohmann::json qb::QueueComponent::send_yn_message(Queue& queue, Bot& bot, const
     const auto resp = send_removable_message(bot, message, channel);
     if(resp.empty()) return {};
     active_queues.emplace(resp["id"], queue);
-    bot.on_message_id(resp["id"], bind_action(&qb::QueueComponent::add_yn_reaction, this));
+    bot.on_message_id(resp["id"], bind_message_action(&qb::QueueComponent::add_yn_reaction, this));
     return resp;
 
 }
@@ -75,9 +75,10 @@ qb::Result qb::QueueComponent::add_yn_reaction( const std::string& message_id, c
     {
         bot.get_context()->put(qb::endpoints::reaction(message.channel, message_id, *yes_emote), {});
     }
-
+    
     bot.on_message_reaction(message, [this, em = qb::fileio::get_emote("yes"), message_id, message](
-                                             const std::string&, const api::Reaction& reaction, Bot& bot) {
+                                             const std::string&, const api::Reaction& reaction, Bot& bot, int count) {
+            
             qb::log::point("> Checking if reaction: ", reaction.to_string(),
                            " is the correct reaction to edit the message: ", message_id);
             const auto& bID = bot.idref(); // ALSO A HACK
@@ -94,15 +95,24 @@ qb::Result qb::QueueComponent::add_yn_reaction( const std::string& message_id, c
             }
             if (qb::parse::compare_emotes(em, reaction.emoji))
             {
-
-                active_queues.at(message.id).users.push_back(reaction.user.id);
-                qb::log::point("Editing message");
-                
-                if(active_queues.empty())
-                {
-                    qb::log::point("Oh no, active queues is empty");
+                if(count == 0){
+                    auto& users = active_queues.at(message_id).users;
+                    const auto itr = std::remove(users.begin(), users.end(), reaction.user.id);
+                    if (itr == users.end()) {
+                    qb::log::point("The user ", reaction.user.id, " was not registered!");
+                    return qb::Result::Value::PersistCallback;
+                    }
+                    users.erase(itr, users.end());
                 }
-                
+                else{
+                    active_queues.at(message.id).users.push_back(reaction.user.id);
+                    qb::log::point("Editing message");
+                    
+                    if(active_queues.empty())
+                    {
+                        qb::log::point("Oh no, active queues is empty");
+                    }
+                }
                 nlohmann::json new_message;
                 new_message["content"] = active_queues.at(message.id).to_str();
                 bot.get_context()->patch(message.endpoint(), new_message.dump());

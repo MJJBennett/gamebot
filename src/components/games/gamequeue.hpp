@@ -7,11 +7,11 @@ namespace qb
 {
 class Queue {
     public:
-    Queue(const std::string name, const api::Message message, const std::string game, const int max_size) 
-        : name_(name), message_(message), game_(game), max_size_(max_size) {}
+    Queue(std::string name, api::Message message, std::string game, int max_size, int time) 
+        : name_(name), message_(message), game_(game), max_size_(max_size), time_(time) {}
     
 
-    const std::string to_str();
+    std::string to_str() const;
     const std::string name_;
     const api::Message message_;
     const std::string game_;
@@ -20,7 +20,9 @@ class Queue {
     std::vector<std::string> users;
 
     //maximum number of users allowed in queue
-    const int max_size_; 
+    int max_size_; 
+
+    int time_;
 };
 
 class QueueComponent : public Component

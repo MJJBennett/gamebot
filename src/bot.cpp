@@ -153,12 +153,13 @@ void qb::Bot::handle_event(const json& payload)
     {
         qb::log::point("A ready payload was sent.");
     }
-    else if (et == "MESSAGE_REACTION_ADD") {
+    else if (et == "MESSAGE_REACTION_ADD" || et == "MESSAGE_REACTION_REMOVE") {
         qb::log::point("A reaction was added to a message.");
         auto msg = api::Reaction::create(payload["d"]);
         // TODO should really just be passing the message...
         qb::log::point("Execute relevant callbacks.");
-        execute_callbacks(*this, msg.message_id, payload["d"], message_reaction_callbacks_);
+        
+        execute_callbacks<qb::api::Reaction>(*this, msg.message_id, payload["d"], message_reaction_callbacks_, et == "MESSAGE_REACTION_ADD");
     }
 }
 
