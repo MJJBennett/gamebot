@@ -3,8 +3,11 @@
 
 #include "../component.hpp"
 
-#include <optional>
 #include <chrono>
+#include <memory>
+#include <optional>
+
+#include <boost/asio/steady_timer.hpp>
 
 namespace qb
 {
@@ -38,6 +41,8 @@ public:
     std::optional<int> max_size_;
 
     std::optional<std::chrono::duration<long>> time_;
+
+    std::optional<boost::asio::steady_timer> timer_{};
 };
 
 class QueueComponent : public Component
@@ -45,10 +50,10 @@ class QueueComponent : public Component
 public:
     qb::Result add_queue(const std::string& cmd, const api::Message& msg, Bot& bot);
     qb::Result remove_queue(const std::string& cmd, const api::Message& msg, Bot& bot);
-    nlohmann::json send_yn_message(Queue& queue, Bot& bot, const std::string& message, const std::string& channel);
+    nlohmann::json send_yn_message(Queue&& queue, Bot& bot, const std::string& message, const std::string& channel);
     void register_actions(Actions<>& actions) override;
 
-    qb::Result end_queue(const std::string& message_id, const api::Reaction reaction, Bot& bot);
+    qb::Result end_queue(const std::string& message_id, const api::Reaction& reaction, Bot& bot);
     void dump_debug() const;
 
 private:

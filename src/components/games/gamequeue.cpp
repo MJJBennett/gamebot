@@ -5,6 +5,8 @@
 #include "utils/parse.hpp"
 #include "utils/utils.hpp"
 
+#include <boost/asio/steady_timer.hpp>
+
 std::string qb::Queue::to_str() const
 {
     std::string max_players = max_size_ ? (" (Max **" + std::to_string(*max_size_) + "**)") : "";
@@ -31,6 +33,7 @@ qb::Result qb::QueueComponent::add_queue(const std::string& cmd, const api::Mess
 {
     const auto& channel = msg.channel;
 
+    // IIFE, very nice
     Queue new_queue = [&]() {
         auto [args, numeric_args, duration_args] = qb::parse::decompose_command(cmd);
         qb::log::point("Queue creation: \n\tFound ", args.size(), " arguments\n\tFound ",
@@ -55,18 +58,22 @@ qb::Result qb::QueueComponent::add_queue(const std::string& cmd, const api::Mess
         std::optional<std::chrono::duration<long>> time;
         if (duration_args.size() != 0)
         {
-            time = duration_args[0];
+            if (duration_args[0].count() < 10)
+                send_removable_message(bot, "Sorry, please choose a time that is greater than 10s.", channel);
+            else
+                time = duration_args[0];
         }
         return Queue(name, game, max_size, time);
     }();
 
     auto endpoint = msg.endpoint();
     bot.get_context()->del(endpoint);
-    send_yn_message(new_queue, bot, new_queue.to_str(), channel);
+    send_yn_message(std::move(new_queue), bot, new_queue.to_str(), channel);
     return qb::Result::ok();
 }
 
-nlohmann::json qb::QueueComponent::send_yn_message(Queue& queue,
+// TODO should probably take Queue and not Queue&
+nlohmann::json qb::QueueComponent::send_yn_message(Queue&& queue,
                                                    Bot& bot,
                                                    const std::string& message,
                                                    const std::string& channel)
@@ -74,7 +81,7 @@ nlohmann::json qb::QueueComponent::send_yn_message(Queue& queue,
     qb::log::point("A queue message.");
     const auto resp = send_removable_message(bot, message, channel);
     if (resp.empty()) return {};
-    active_queues.emplace(resp["id"], queue);
+    active_queues.emplace(resp["id"], std::move(queue));
     bot.on_message_id(resp["id"], bind_message_action(&qb::QueueComponent::add_yn_reaction, this));
     return resp;
 }
@@ -95,10 +102,28 @@ qb::Result qb::QueueComponent::add_yn_reaction(const std::string& message_id, co
         {
             qb::log::point("> > Did not edit message, as the bot has no ID.");
             bot.idref() = reaction.user.id;
-            return qb::Result::Value::PersistCallback;
         }
         if (reaction.user.id == *bot.idref())
         {
+            /**
+             * We now need to add the callback for this message.
+             * This requires adding an async callback to the io_context
+             */
+            if (active_queues.find(message_id) != active_queues.end())
+            {
+                auto& q = active_queues.at(message_id);
+                if (q.time_ && !q.timer_)
+                {
+                    // this is a chrono duration so it should be correct by default, actually
+                    q.timer_.emplace(*(bot.get_context()->ioc_ptr()), *q.time_);
+                    q.timer_->async_wait([this, &bot, reaction](const boost::system::error_code& error) {
+                        this->end_queue(reaction.message_id, reaction, bot);
+                    });
+                }
+            }
+            else
+                qb::log::warn("Couldn't find the message in queues for some reason. (#1)");
+
             qb::log::point("> > Did not edit message, as it was sent by the bot.");
             return qb::Result::Value::PersistCallback;
         }
@@ -146,15 +171,21 @@ qb::Result qb::QueueComponent::add_yn_reaction(const std::string& message_id, co
     return qb::Result::ok();
 }
 
-qb::Result qb::QueueComponent::end_queue(const std::string& message_id, const api::Reaction reaction, Bot& bot)
+qb::Result qb::QueueComponent::end_queue(const std::string& message_id, const api::Reaction& reaction, Bot& bot)
 {
     if (active_queues.find(message_id) == active_queues.end())
     {
+        // this is probably fine and not a concern
         qb::log::warn("Already deleted queue at message ID ", message_id);
         return qb::Result::Value::Ok;
     }
     auto& q     = active_queues.at(message_id);
     auto& users = active_queues.at(message_id).users;
+    if (q.timer_)
+    {
+        q.timer_->cancel();
+        q.timer_.reset();
+    }
     std::stringstream ss;
     for (const auto& i : users)
     {
