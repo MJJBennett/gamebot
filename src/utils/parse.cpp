@@ -1,7 +1,8 @@
 #include "parse.hpp"
+#include <iostream>
 
-#include "components/config.hpp"
 #include "api/emoji.hpp"
+#include "components/config.hpp"
 #include <algorithm>
 #include <cctype>
 
@@ -55,10 +56,117 @@ bool qb::parse::startswithword(const std::string& str, const std::string& start)
            ((start.size() < str.size()) && !isalpha(str[start.size()]) && str.substr(0, start.size()) == start);
 }
 
+qb::parse::SplitNumber qb::parse::split_number(const std::string& s)
+{
+    auto start = std::find_if(s.begin(), s.end(), [](char c) { return c != ' '; });
+    if (start == s.end()) return {};
+    auto num_end = std::find_if(start, s.end(), [](char c) { return !isdigit(c); });
+    if (start == num_end) return SplitNumber{{}, s};
+    return SplitNumber{std::stoi(std::string(start, num_end)), {num_end, s.end()}};
+}
+
+bool qb::parse::is_valid_time_trailer(const std::string& s)
+{
+    // d4h -> d
+    // daysofthemonth5555 -> daysofthemonth
+    // desparate55 -> desparate
+    std::string non_digits{s.begin(),
+                           std::find_if(s.begin(), s.end(), [](char c) { return isdigit(c); })};
+    // very bad but very functional! A for effort
+    if (non_digits.size() > 7 || non_digits.size() == 0) return false;
+    if (::qb::parse::in(non_digits[0], std::string{"hmsd"})) return true;
+    return false;
+}
+
+std::chrono::duration<long> get_seconds(const std::string& trailer, long num)
+{
+    using ld = std::chrono::duration<long>;
+    if (trailer[0] == 's') return ld(num);
+    if (trailer[0] == 'm') return ld(num * 60);
+    if (trailer[0] == 'h') return ld(num * 60 * 60);
+    if (trailer[0] == 'd') return ld(num * 60 * 60 * 24);
+    return ld(0);
+}
+
+void qb::parse::decompose_argument(qb::parse::DecomposedCommand& res, std::string in)
+{
+    try
+    {
+        // Check if we only got a number
+        auto [first_num, first_trail] = split_number(in);
+        if (first_num && first_trail.empty())
+        {
+            res.numeric_arguments.push_back(*first_num);
+            return;
+        }
+        // Check if we only got a string (no leading number)
+        if (!first_num)
+        {
+            res.arguments.push_back(in);
+            return;
+        }
+        // Okay, we got a number with trailing characters.
+        if (!is_valid_time_trailer(first_trail))
+        {
+            res.arguments.push_back(in);
+            return;
+        }
+        // no months+ support yet
+        std::chrono::duration<long> s(0);
+        s += get_seconds(first_trail, *first_num);
+        std::string prev_trail = first_trail; // = d5h or similar
+        while (true)
+        {
+            // so currently prev_trail is something like d123d123d
+            // 5h or similar
+            prev_trail = std::string{std::find_if(prev_trail.begin(), prev_trail.end(), isdigit),
+                                     prev_trail.end()};
+            // now we do the above and have 123d123d
+            // now here we get 123, d123d
+            // if trailer is empty, we return. if not a valid time trailer,
+            // we also return.
+            // eventually we get down to 123d
+            // then our next iteration we don't find any numbers
+            // so we return:
+            if (prev_trail.empty())
+            {
+                res.duration_arguments.push_back(s);
+                return;
+            }
+            auto [num, trail] = split_number(prev_trail);
+            prev_trail        = trail;
+            // Okay, random trailing numbers, nevermind.
+            if (trail.empty() || !is_valid_time_trailer(trail))
+            {
+                res.arguments.push_back(in);
+                return;
+            }
+            s += get_seconds(trail, *num);
+        }
+    }
+    catch (const std::exception& e)
+    {
+        res.arguments.push_back(in);
+        return;
+    }
+}
+
+qb::parse::DecomposedCommand qb::parse::decompose_command(const std::string& command)
+{
+    qb::parse::DecomposedCommand ret;
+    auto cmds = split(command);
+    if (cmds.size() < 2) return ret;
+    for (auto itr = cmds.begin() + 1; itr != cmds.end(); itr++)
+    {
+        decompose_argument(ret, *itr);
+    }
+    return ret;
+}
+
 std::tuple<std::string, std::vector<std::string>> qb::parse::get_time(std::vector<std::string> to_search)
 {
     /**
-     * Looking at this function now (13/02/21) 
+     * Looking at this function now (13/02/21)
      * it seems like this, match(2).1, and match(2).2 are all
      * tools for parsing time expressions out of strings.
      * However, none of them seem particularly useful.
@@ -203,7 +311,8 @@ std::string qb::parse::get_command_name(std::string str)
     return {s, std::find_if(s, str.end(), isspace)};
 }
 
-bool qb::parse::compare_emotes(const std::string& s, const qb::api::Emoji& e) {
+bool qb::parse::compare_emotes(const std::string& s, const qb::api::Emoji& e)
+{
     if (e.id) return compare_emotes(s, *e.id);
     return compare_emotes(s, *e.name);
 }

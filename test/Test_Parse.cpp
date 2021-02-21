@@ -88,3 +88,98 @@ TEST(Parse, get_trailingest_digits)
     ASSERT_EQ(get_trailingest_digits("hellohello"), std::string{""});
     ASSERT_EQ(get_trailingest_digits("he33lo123hello"), std::string{"123"});
 }
+
+TEST(Parse, is_valid_time_trailer)
+{
+    std::string s{"d5h"};
+    std::string nd{s.begin(), std::find_if(s.begin(), s.end(), [](char c) { return isdigit(c); })};
+    ASSERT_EQ(nd, "d");
+    ASSERT_TRUE(::qb::parse::in('d', std::string{"hmsd"}));
+    ASSERT_TRUE(is_valid_time_trailer("d5h"));
+}
+
+TEST(Parse, split_number)
+{
+    auto [fn, ft] = split_number("4d5h");
+    ASSERT_TRUE(fn);
+    ASSERT_FALSE(ft.empty());
+    ASSERT_EQ(*fn, 4);
+    ASSERT_EQ(ft, "d5h");
+
+    auto [nn, nt] = split_number("5h");
+    ASSERT_TRUE(nn);
+    ASSERT_FALSE(nt.empty());
+    ASSERT_EQ(*nn, 5);
+    ASSERT_EQ(nt, "h");
+}
+
+TEST(Parse, decompose_argument)
+{
+    DecomposedCommand cmd;
+    std::string s;
+
+    s = "hello!";
+    decompose_argument(cmd, s);
+    ASSERT_EQ(cmd.arguments.size(), 1);
+    ASSERT_EQ(cmd.arguments[0], "hello!");
+
+    s = "4d5lifetime-subscriptions-to-walmart!";
+    decompose_argument(cmd, s);
+    EXPECT_EQ(cmd.numeric_arguments.size(), 0);
+    EXPECT_EQ(cmd.duration_arguments.size(), 0);
+    ASSERT_EQ(cmd.arguments.size(), 2);
+    ASSERT_EQ(cmd.arguments[1], "4d5lifetime-subscriptions-to-walmart!");
+
+    s = "4d5h";
+    decompose_argument(cmd, s);
+    EXPECT_EQ(cmd.numeric_arguments.size(), 0);
+    EXPECT_EQ(cmd.duration_arguments.size(), 1);
+    ASSERT_EQ(cmd.arguments.size(), 2);
+    ASSERT_EQ(cmd.duration_arguments[0].count(),
+              std::chrono::duration<long>((4 * 24 * 60 * 60) + 5 * 60 * 60).count());
+
+    s = "4d5h5m2s";
+    decompose_argument(cmd, s);
+    EXPECT_EQ(cmd.numeric_arguments.size(), 0);
+    EXPECT_EQ(cmd.duration_arguments.size(), 2);
+    ASSERT_EQ(cmd.arguments.size(), 2);
+    ASSERT_EQ(cmd.duration_arguments[0].count(),
+              std::chrono::duration<long>((4 * 24 * 60 * 60) + 5 * 60 * 60).count());
+    ASSERT_EQ(cmd.duration_arguments[1].count(),
+              std::chrono::duration<long>((4 * 24 * 60 * 60) + 5 * 60 * 60 + 5 * 60 + 2).count());
+
+    s = "3421";
+    decompose_argument(cmd, s);
+    EXPECT_EQ(cmd.numeric_arguments.size(), 1);
+    EXPECT_EQ(cmd.duration_arguments.size(), 2);
+    ASSERT_EQ(cmd.arguments.size(), 2);
+    ASSERT_EQ(cmd.numeric_arguments[0], 3421);
+}
+
+TEST(Parse, decompose_command)
+{
+    auto cmd =
+        decompose_command(std::string{"empty-thing "
+                                      "hello! "
+                                      "4d5lifetime-subscriptions-to-walmart! "
+                                      "4d5h "
+                                      "4d5h5m2s "
+                                      "3421"});
+
+    ASSERT_EQ(cmd.numeric_arguments.size(), 1);
+    ASSERT_EQ(cmd.arguments.size(), 2);
+    ASSERT_EQ(cmd.duration_arguments.size(), 2);
+
+    // Arguments
+    ASSERT_EQ(cmd.arguments[0], "hello!");
+    ASSERT_EQ(cmd.arguments[1], "4d5lifetime-subscriptions-to-walmart!");
+
+    // Duration arguments
+    ASSERT_EQ(cmd.duration_arguments[0].count(),
+              std::chrono::duration<long>((4 * 24 * 60 * 60) + 5 * 60 * 60).count());
+    ASSERT_EQ(cmd.duration_arguments[1].count(),
+              std::chrono::duration<long>((4 * 24 * 60 * 60) + 5 * 60 * 60 + 5 * 60 + 2).count());
+
+    // Numeric arguments
+    ASSERT_EQ(cmd.numeric_arguments[0], 3421);
+}
