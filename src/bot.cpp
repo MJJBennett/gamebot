@@ -1,10 +1,9 @@
 #include "bot.hpp"
 
+#include "components/games/gamequeue.hpp"
 #include "components/games/hangman.hpp"
 #include "components/messages.hpp"
 #include "components/sentiment.hpp"
-#include "components/games/gamequeue.hpp"
-#include "components/games/hangman.hpp"
 #include "utils/debug.hpp"
 #include "utils/fileio.hpp"
 #include "utils/json_utils.hpp"
@@ -112,6 +111,14 @@ void qb::Bot::handle_event(const json& payload)
                 configure(cmd, payload["d"]);
             else if (startswithword(cmd, "assign"))
                 assign_emote(cmd, channel);
+            else if (startswithword(cmd, "db:cursed-reconnect-code-copy-test"))
+            {
+                qb::log::err(
+                    "Received opcode 7 (no, really!): Reconnect. Did it work? Probably not.");
+                const auto socket_info       = web_ctx_->get(web::Endpoint::gateway_bot);
+                const std::string socket_url = socket_info["url"];
+                ws_.emplace(std::move(web_ctx_->acquire_websocket(socket_url)));
+            }
             else
             {
                 // Check if we have an action bound for this command
@@ -153,13 +160,15 @@ void qb::Bot::handle_event(const json& payload)
     {
         qb::log::point("A ready payload was sent.");
     }
-    else if (et == "MESSAGE_REACTION_ADD" || et == "MESSAGE_REACTION_REMOVE") {
+    else if (et == "MESSAGE_REACTION_ADD" || et == "MESSAGE_REACTION_REMOVE")
+    {
         qb::log::point("A reaction was added to a message.");
         auto msg = api::Reaction::create(payload["d"]);
         // TODO should really just be passing the message...
         qb::log::point("Execute relevant callbacks.");
-        
-        execute_callbacks<qb::api::Reaction>(*this, msg.message_id, payload["d"], message_reaction_callbacks_, et == "MESSAGE_REACTION_ADD");
+
+        execute_callbacks<qb::api::Reaction>(*this, msg.message_id, payload["d"], message_reaction_callbacks_,
+                                             et == "MESSAGE_REACTION_ADD");
     }
 }
 
@@ -270,9 +279,8 @@ void qb::Bot::list(const std::string& cmd, const std::string& channel)
 //     if (contents.size() != 2)
 //     {
 //         send(
-//             "Current format for queue is: queue [Activity] [Time | Max Participants] (e.g. queue "
-//             "Soccer 3m or queue Chess 2)",
-//             channel);
+//             "Current format for queue is: queue [Activity] [Time | Max Participants] (e.g. queue
+//             " "Soccer 3m or queue Chess 2)", channel);
 //         return;
 //     }
 
@@ -291,41 +299,39 @@ void qb::Bot::list(const std::string& cmd, const std::string& channel)
 //     catch (const std::invalid_argument&)
 //     {
 //         send(
-//             "Current format for queue is: queue [Activity] [Time | Max Participants] (e.g. queue "
-//             "Soccer 3m or queue Chess 2)",
-//             channel);
+//             "Current format for queue is: queue [Activity] [Time | Max Participants] (e.g. queue
+//             " "Soccer 3m or queue Chess 2)", channel);
 //         return;
 //     }
 
-    // if (time)
-    //     qb::log::point("Starting time queue with value of ", param);
-    // else
-    //     qb::log::point("Starting person queue with value of ", param);
+// if (time)
+//     qb::log::point("Starting time queue with value of ", param);
+// else
+//     qb::log::point("Starting person queue with value of ", param);
 
-    // if (time)
-    // {
-    //     auto [it, b] = queues_.emplace(std::piecewise_construct, std::make_tuple(msg_id),
-    //                                    std::make_tuple(guild, channel, param, web_ctx_->ioc_ptr()));
-    //     if (!b)
-    //     {
-    //         send("Something failed when creating the queue. Please try again!", channel);
-    //     }
-    //     it->second.async_wait(std::bind(&qb::Bot::handle_queue_timeout, this, msg_id, std::placeholders::_1),
-    //                           std::chrono::minutes(param));
-    // }
-    // else
-    // {
-    //     auto [it, b] = queues_.emplace(std::piecewise_construct, std::make_tuple(msg_id),
-    //                                    std::make_tuple(guild, channel, param));
-    //     if (!b)
-    //     {
-    //         send("Something failed when creating the queue. Please try again!", channel);
-    //     }
-    // }
+// if (time)
+// {
+//     auto [it, b] = queues_.emplace(std::piecewise_construct, std::make_tuple(msg_id),
+//                                    std::make_tuple(guild, channel, param, web_ctx_->ioc_ptr()));
+//     if (!b)
+//     {
+//         send("Something failed when creating the queue. Please try again!", channel);
+//     }
+//     it->second.async_wait(std::bind(&qb::Bot::handle_queue_timeout, this, msg_id, std::placeholders::_1),
+//                           std::chrono::minutes(param));
+// }
+// else
+// {
+//     auto [it, b] = queues_.emplace(std::piecewise_construct, std::make_tuple(msg_id),
+//                                    std::make_tuple(guild, channel, param));
+//     if (!b)
+//     {
+//         send("Something failed when creating the queue. Please try again!", channel);
+//     }
+// }
 
-    
-    // Write our own parsing logic here, for now
-    // It can be assumed that data is valid and contains what it must
+// Write our own parsing logic here, for now
+// It can be assumed that data is valid and contains what it must
 //     if (queues_.find(guild) == queues_.end())
 //     {
 //         queues_.emplace(guild, std::vector<nlohmann::json>{});
@@ -337,9 +343,8 @@ void qb::Bot::list(const std::string& cmd, const std::string& channel)
 //              qb::fileio::get_emote("maybe") + " to indicate a 'maybe', or " +
 //              qb::fileio::get_emote("no") + " to indicate a definite no.",
 //          channel);
-    
-// }
 
+// }
 
 // void qb::Bot::handle_queue_timeout(const std::string& message_id, const boost::system::error_code& error)
 // {
@@ -599,8 +604,13 @@ void qb::Bot::read_handler(const boost::system::error_code& error, std::size_t b
         handle_event(resp);
         break;
     case 7:
-        qb::log::err("Received opcode 7: Reconnect. Not implemented! Fix this.");
+    {
+        qb::log::err("Received opcode 7: Reconnect. Did it work? Probably not.");
+        const auto socket_info       = web_ctx_->get(web::Endpoint::gateway_bot);
+        const std::string socket_url = socket_info["url"];
+        ws_.emplace(std::move(web_ctx_->acquire_websocket(socket_url)));
         break;
+    }
     case 11:
         // Handle ACK here because it's easy
         if (log_loud_) qb::log::point("Received ACK.");
@@ -651,10 +661,10 @@ void qb::Bot::start()
      */
     qb::Hangman hangman;
     hangman.register_actions(actions_);
-    
+
     qb::QueueComponent queues;
     queues.register_actions(actions_);
-    
+
     /**
      * Begin allowing completion handlers to fire.
      * Blocking call - anything after this is only executed after
