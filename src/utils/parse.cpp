@@ -274,7 +274,7 @@ bool qb::parse::match(std::string expr, std::string to_match)
             {
                 // consume the thing!
                 size_t g_pos{0};
-                for (int i = 0; i < to_match.size(); i++)
+                for (size_t i = 0; i < to_match.size(); i++)
                 {
                     if (is_char((*group)[g_pos], to_match[i]))
                     // we matched a character, nice

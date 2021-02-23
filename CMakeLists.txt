@@ -23,6 +23,12 @@ try_compile(HAS_FS "${CMAKE_BINARY_DIR}/temp"
 add_executable(GameBot src/main.cpp)
 add_subdirectory(src)
 
+if(MSVC)
+    target_compile_options(GameBot PRIVATE /W4 /WX)
+else()
+    target_compile_options(GameBot PRIVATE -Wall -Wextra -pedantic )
+endif()
+
 target_link_libraries(GameBot PUBLIC ${CMAKE_THREAD_LIBS_INIT})
 if (HAS_FS)
 else()

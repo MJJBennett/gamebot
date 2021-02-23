@@ -22,12 +22,14 @@ public:
     }
     void disconnect();
 
-    boost::asio::ip::tcp::resolver resolver_;
 
 private:
     std::unique_ptr<WebSocket> ws_;
     boost::asio::ssl::context ssl_ctx_;
     boost::asio::io_context& ioc_;
+
+public:
+    boost::asio::ip::tcp::resolver resolver_;
 };
 
 } // namespace web

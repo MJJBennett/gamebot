@@ -107,7 +107,7 @@ web::WSWrapper web::context::acquire_websocket(const std::string& psocket_url)
     qb::log::point("Performing the websocket handshake.");
     ws->handshake(socket_url, std::string(qb::endpoints::websocket));
 
-    return std::move(ws);
+    return ws;
 }
 
 std::string web::endpoint_str(Endpoint ep, const std::string& specifier)

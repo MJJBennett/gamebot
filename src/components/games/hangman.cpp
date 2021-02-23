@@ -37,7 +37,7 @@ qb::Result qb::Hangman::guess_hangman(const std::string& cmd, const api::Message
     return qb::Result::ok();
 }
 
-qb::Result qb::Hangman::run_hangman(const std::string& cmd, const api::Message& msg, Bot& bot)
+qb::Result qb::Hangman::run_hangman(const std::string&, const api::Message& msg, Bot& bot)
 {
     qb::log::point("Starting a hangman game.");
     const auto& channel = msg.channel;

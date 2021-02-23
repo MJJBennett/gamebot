@@ -97,13 +97,13 @@ qb::Result qb::QueueComponent::add_yn_reaction(const std::string& message_id, co
                                          const std::string&, const api::Reaction& reaction, Bot& bot, int count) {
         qb::log::point("> Checking if reaction: ", reaction.to_string(),
                        " is the correct reaction to edit the message: ", message_id);
-        const auto& bID = bot.idref(); // ALSO A HACK
-        if (!bot.idref())
+        auto& bID = bot.idref(); // ALSO A HACK
+        if (!bID)
         {
             qb::log::point("> > Did not edit message, as the bot has no ID.");
-            bot.idref() = reaction.user.id;
+            bID = reaction.user.id;
         }
-        if (reaction.user.id == *bot.idref())
+        if (reaction.user.id == *bID)
         {
             /**
              * We now need to add the callback for this message.
@@ -117,6 +117,12 @@ qb::Result qb::QueueComponent::add_yn_reaction(const std::string& message_id, co
                     // this is a chrono duration so it should be correct by default, actually
                     q.timer_.emplace(*(bot.get_context()->ioc_ptr()), *q.time_);
                     q.timer_->async_wait([this, &bot, reaction](const boost::system::error_code& error) {
+                        if (error)
+                        {
+                            qb::log::err("Found some kind of error with async_wait.");
+                            qb::log::err(error.message());
+                            return;
+                        }
                         this->end_queue(reaction.message_id, reaction, bot);
                     });
                 }
@@ -156,7 +162,7 @@ qb::Result qb::QueueComponent::add_yn_reaction(const std::string& message_id, co
                 }
                 auto& q     = active_queues.at(message_id);
                 auto& users = active_queues.at(message_id).users;
-                if (q.max_size_ && users.size() == *(q.max_size_))
+                if (q.max_size_ && users.size() == static_cast<size_t>(*(q.max_size_)))
                 {
                     return *end_queue(message_id, reaction, bot).val;
                 }

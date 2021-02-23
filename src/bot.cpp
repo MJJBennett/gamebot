@@ -113,11 +113,10 @@ void qb::Bot::handle_event(const json& payload)
                 assign_emote(cmd, channel);
             else if (startswithword(cmd, "db:cursed-reconnect-code-copy-test"))
             {
-                qb::log::err(
-                    "Received opcode 7 (no, really!): Reconnect. Did it work? Probably not.");
+                qb::log::err("Simulating opcode 7.");
                 const auto socket_info       = web_ctx_->get(web::Endpoint::gateway_bot);
                 const std::string socket_url = socket_info["url"];
-                ws_.emplace(std::move(web_ctx_->acquire_websocket(socket_url)));
+                ws_.emplace(web_ctx_->acquire_websocket(socket_url));
             }
             else
             {
@@ -212,7 +211,7 @@ nlohmann::json qb::Bot::send(std::string msg, std::string channel)
     return resp;
 }
 
-bool qb::Bot::dispatch_in(ActionCallback action, std::chrono::duration<long> when)
+bool qb::Bot::dispatch_in(ActionCallback, std::chrono::duration<long>)
 {
     // Currently unimplemented. TODO.
     return false;
@@ -248,7 +247,7 @@ void qb::Bot::print(const std::string& cmd, const std::string& channel)
     send(cmd.substr(6), channel);
 }
 
-void qb::Bot::list(const std::string& cmd, const std::string& channel)
+void qb::Bot::list(const std::string&, const std::string& channel)
 {
     // We need to build a list of all the JSON keys
     send(qb::messages::keys(qb::parse::concatenate(qb::fileio::skribbl::keys())), channel);
@@ -608,7 +607,7 @@ void qb::Bot::read_handler(const boost::system::error_code& error, std::size_t b
         qb::log::err("Received opcode 7: Reconnect. Did it work? Probably not.");
         const auto socket_info       = web_ctx_->get(web::Endpoint::gateway_bot);
         const std::string socket_url = socket_info["url"];
-        ws_.emplace(std::move(web_ctx_->acquire_websocket(socket_url)));
+        ws_.emplace(web_ctx_->acquire_websocket(socket_url));
         break;
     }
     case 11:
@@ -648,7 +647,7 @@ void qb::Bot::start()
     qb::log::data("Socket information", socket_info.dump(2));
 
     // Acquire a websocket connection to the URL.
-    ws_.emplace(std::move(web_context.acquire_websocket(socket_url)));
+    ws_.emplace(web_context.acquire_websocket(socket_url));
 
     // Start the asynchronous read loop.
     dispatch_read();

@@ -8,7 +8,7 @@
 #include <fstream>
 #include <unordered_map>
 
-class emote_cache;
+struct emote_cache;
 void invalidate_emote_cache();
 emote_cache& get_emote_cache();
 

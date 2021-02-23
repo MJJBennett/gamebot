@@ -11,15 +11,15 @@ namespace qb
 class queue
 {
 public:
-    queue(std::string guild_id, std::string channel_id, int param, boost::asio::io_context* ioc)
-        : guild_id_(guild_id),
-          channel_id_(channel_id),
+    queue(std::string guild_id, std::string channel_id, int, boost::asio::io_context* ioc)
+        : channel_id_(channel_id),
+          guild_id_(guild_id),
           timer_(std::make_unique<boost::asio::steady_timer>(*ioc))
     {
     }
 
-    queue(std::string guild_id, std::string channel_id, int param)
-        : guild_id_(guild_id), channel_id_(channel_id), timer_(nullptr)
+    queue(std::string guild_id, std::string channel_id, int)
+        : channel_id_(channel_id), guild_id_(guild_id), timer_(nullptr)
     {
     }
 
