@@ -31,14 +31,14 @@ qb::Result qb::Component::add_delete_reaction(const std::string& message_id, con
             if(count==0) return qb::Result::Value::PersistCallback;
             qb::log::point("> Checking if reaction: ", reaction.to_string(),
                            " is the correct reaction to remove the message: ", message_id);
-            const auto& bID = bot.idref(); // ALSO A HACK
-            if (!bot.idref())
+            auto& bID = bot.idref(); // ALSO A HACK
+            if (!bID)
             {
                 qb::log::point("> > Did not remove message, as the bot has no ID.");
-                bot.idref() = reaction.user.id;
+                bID = reaction.user.id;
                 return qb::Result::Value::PersistCallback;
             }
-            if (reaction.user.id == *bot.idref())
+            if (reaction.user.id == *bID)
             {
                 qb::log::point("> > Did not remove message, as it was sent by the bot.");
                 return qb::Result::Value::PersistCallback;

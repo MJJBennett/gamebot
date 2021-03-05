@@ -76,7 +76,7 @@ inline json parse_safe(const std::string& content)
 {
     try {
         return json::parse(content);
-    } catch (json::parse_error e) {
+    } catch (const json::parse_error& e) {
         qb::log::point("Could not parse JSON: ", e.what());
         if (content.size() < 2) qb::log::point("Note: This error is likely caused by an empty string, and can be ignored.");
         return {};
