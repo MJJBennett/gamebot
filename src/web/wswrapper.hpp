@@ -22,6 +22,10 @@ public:
     }
     void disconnect();
 
+    WebSocket* get()
+    {
+        return ws_.get();
+    }
 
 private:
     std::unique_ptr<WebSocket> ws_;

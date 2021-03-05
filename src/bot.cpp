@@ -607,6 +607,7 @@ void qb::Bot::read_handler(const boost::system::error_code& error, std::size_t b
         qb::log::err("Received opcode 7: Reconnect. Did it work? Probably not.");
         const auto socket_info       = web_ctx_->get(web::Endpoint::gateway_bot);
         const std::string socket_url = socket_info["url"];
+        if (ws_) boost::beast::get_lowest_layer(*(ws_->get())).cancel();
         ws_.emplace(web_ctx_->acquire_websocket(socket_url));
         break;
     }
