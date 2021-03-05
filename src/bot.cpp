@@ -604,11 +604,9 @@ void qb::Bot::read_handler(const boost::system::error_code& error, std::size_t b
         break;
     case 7:
     {
-        qb::log::err("Received opcode 7: Reconnect. Did it work? Probably not.");
-        const auto socket_info       = web_ctx_->get(web::Endpoint::gateway_bot);
-        const std::string socket_url = socket_info["url"];
-        if (ws_) boost::beast::get_lowest_layer(*(ws_->get())).cancel();
-        ws_.emplace(web_ctx_->acquire_websocket(socket_url));
+        qb::log::warn("Received opcode 7: Reconnect. Attempting reconnection:");
+        attempt_ws_reconnect();
+        qb::log::point("Finished reconnection.");
         break;
     }
     case 11:
@@ -628,6 +626,24 @@ void qb::Bot::read_handler(const boost::system::error_code& error, std::size_t b
     // We must always recursively continue to read more data.
     if (log_loud_) qb::log::point("Dispatching new read.");
     dispatch_read();
+}
+
+void qb::Bot::attempt_ws_reconnect()
+{
+    const auto socket_info       = web_ctx_->get(web::Endpoint::gateway_bot);
+    const std::string socket_url = socket_info["url"];
+    if (ws_) boost::beast::get_lowest_layer(*(ws_->get())).cancel();
+    ws_.reset();
+    ws_.emplace(web_ctx_->acquire_websocket(socket_url));
+
+    // This should probably be bundled with ws_ to prevent explicit reset here
+    outstanding_write_ = false;
+
+    // Start the asynchronous read loop.
+    dispatch_read();
+
+    // Start the asynchronous write loop.
+    ping_sender({});
 }
 
 void qb::Bot::start()

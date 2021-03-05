@@ -96,6 +96,8 @@ private:
 
     bool is_identity(const nlohmann::json& data);
 
+    void attempt_ws_reconnect();
+
 private:
     std::optional<web::WSWrapper> ws_;                 // WebSocket connection
     boost::beast::flat_buffer buffer_;                 // Persistent read buffer
