@@ -96,7 +96,7 @@ private:
 
     bool is_identity(const nlohmann::json& data);
 
-    void attempt_ws_reconnect();
+    void attempt_ws_reconnect(bool start_read = false);
 
 private:
     std::optional<web::WSWrapper> ws_;                 // WebSocket connection
