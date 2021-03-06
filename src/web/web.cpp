@@ -145,7 +145,36 @@ std::string web::endpoint_str(Endpoint ep, const std::string& specifier)
 
     // Step 03.2 - Receive the HTTP response
     slg += " Receiving HTTP response.";
-    http::read(stream_, buffer, res);
+    // TODO wrap all this stuff in a helper. turns out we get disconnected sometimes.
+    // could not have seen that one coming!
+    try
+    {
+        http::read(stream_, buffer, res);
+    }
+    catch (const std::exception& e)
+    {
+        qb::log::warn("Got error: ", e.what(), " while reading the response to a GET request. (!!)");
+        if (!failed_)
+        {
+            slg.clear();
+            failed_ = true;
+            // It's possible our stream has somehow become disconnected
+            // Instead of instantly erroring, let's set the fail check,
+            // reinitialize and try again.
+            shutdown();
+            stream_ = boost::beast::ssl_stream<boost::beast::tcp_stream>{ioc_, ctx_};
+            initialize();
+            return get(ep);
+        }
+        else
+        {
+            // Request failed twice in a row, could be a network issue.
+            // In the future, this could be a longer timeout.
+            qb::log::err(e.what());
+            throw e;
+        }
+    }
+    failed_ = false;
 
     // Step 04 - Translate the response to JSON
     return nlohmann::json::parse(res.body());
