@@ -168,8 +168,8 @@ qb::parse::DecomposedCommand qb::parse::decompose_command(const std::string& com
                         s += *itr; 
                         s += ' ';
                     }
-                    s = s.substr(1, s.size() - 2);
-                    ret.arguments.emplace_back(std::move(s));
+                    itr = itr - 1;
+                    ret.arguments.emplace_back(s.substr(1, s.size() - 3));
                     break;
                 }
             }

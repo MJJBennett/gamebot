@@ -43,7 +43,7 @@ inline bool startswith(const std::string& str, const std::string& start)
 
 inline bool endswith(const std::string& str, const std::string& end)
 {
-    return ((end.size() <= str.size()) && str.substr(str.size(), str.size() - end.size()) == end);
+    return ((end.size() <= str.size()) && str.substr(str.size() - end.size(), str.size()) == end);
 }
 
 /** Returns whether the first input string starts with the second followed by a non-alphanumeric character. **/
