@@ -638,11 +638,8 @@ void qb::Bot::read_handler(const boost::system::error_code& error, std::size_t b
 
 void qb::Bot::attempt_ws_reconnect(bool start_read)
 {
-    qb::log::point("(1)");
     const auto socket_info = web_ctx_->get(web::Endpoint::gateway_bot);
-    qb::log::point("(2)");
     const std::string socket_url = socket_info["url"];
-    qb::log::point("(3)");
     try
     {
         if (ws_) boost::beast::get_lowest_layer(*(ws_->get())).cancel();
@@ -651,23 +648,17 @@ void qb::Bot::attempt_ws_reconnect(bool start_read)
     {
         qb::log::err("Caught while attempting websocket reconnection: ", e.what());
     }
-    qb::log::point("(4)");
     ws_.reset();
-    qb::log::point("(5)");
     ws_.emplace(web_ctx_->acquire_websocket(socket_url));
-    qb::log::point("(6)");
 
     // This should probably be bundled with ws_ to prevent explicit reset here
     outstanding_write_ = false;
-    qb::log::point("(7)");
 
     // Start the asynchronous read loop.
     if (start_read) dispatch_read();
-    qb::log::point("(8)");
 
     // Start the asynchronous write loop.
     ping_sender({});
-    qb::log::point("(9)");
 }
 
 void qb::Bot::start()
