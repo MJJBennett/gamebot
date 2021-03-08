@@ -7,6 +7,7 @@
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/ssl/stream.hpp>
 #include <boost/beast/core.hpp>
+#include <boost/beast/http.hpp>
 #include <boost/beast/ssl.hpp>
 #include <nlohmann/json.hpp>
 
@@ -27,6 +28,12 @@ std::string endpoint_str(Endpoint, const std::string& specifier = "");
 class context
 {
 public:
+    enum class Result {
+        success,
+        retry,
+        failure,
+    };
+
     context();
     // Initializer, currently must be called to do domain name resolution.
     void initialize();
@@ -59,7 +66,13 @@ public:
         ioc_.run();
     }
 
-    void debug_mode(bool b) { debug_ = b; }
+    void debug_mode(bool b)
+    {
+        debug_ = b;
+    }
+
+    Result read(boost::beast::flat_buffer& buffer,
+                     boost::beast::http::response<boost::beast::http::string_body>& result);
 
 private:
     boost::asio::io_context ioc_{};

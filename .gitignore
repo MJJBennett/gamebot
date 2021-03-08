@@ -8,3 +8,4 @@ token.txt
 __pycache__/
 .vscode/
 src/ex-bot.cpp
+*.log
