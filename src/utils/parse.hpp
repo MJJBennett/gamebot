@@ -41,6 +41,11 @@ inline bool startswith(const std::string& str, const std::string& start)
     return ((start.size() <= str.size()) && str.substr(0, start.size()) == start);
 }
 
+inline bool endswith(const std::string& str, const std::string& end)
+{
+    return ((end.size() <= str.size()) && str.substr(str.size(), str.size() - end.size()) == end);
+}
+
 /** Returns whether the first input string starts with the second followed by a non-alphanumeric character. **/
 bool startswithword(const std::string& str, const std::string& start);
 

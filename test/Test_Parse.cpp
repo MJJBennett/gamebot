@@ -183,3 +183,9 @@ TEST(Parse, decompose_command)
     // Numeric arguments
     ASSERT_EQ(cmd.numeric_arguments[0], 3421);
 }
+
+TEST(Parse, endswith)
+{
+    ASSERT_TRUE(endswith("Hello!", "o!"));
+    ASSERT_FALSE(endswith("Goodbye!", "o!"));
+}
