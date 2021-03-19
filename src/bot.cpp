@@ -117,7 +117,7 @@ void qb::Bot::handle_event(const json& payload)
                 qb::log::warn("Received opcode 7: Reconnect. Attempting reconnection:");
                 // DO NOT start a read, we'll start one after exiting here
                 attempt_ws_reconnect(false);
-                qb::log::point("Finished reconnection.");
+                qb::log::point("Finished reconnection (Cause: Simulated 7).");
             }
             else
             {
@@ -578,7 +578,7 @@ void qb::Bot::read_handler(const boost::system::error_code& error, std::size_t b
     if (log_loud_) qb::log::point("Parsing received data. Bytes transferred: ", bytes_transferred);
     if (error)
     {
-        qb::log::err(error.message(), " (", error.category().name(), ':', error.value(), ')');
+        qb::log::err("Encountered read error: ", error.message(), " (", error.category().name(), ':', error.value(), ')');
         return;
     }
     assert(bytes_transferred != 0);
@@ -607,14 +607,14 @@ void qb::Bot::read_handler(const boost::system::error_code& error, std::size_t b
     {
         qb::log::warn("Received opcode 7: Reconnect. Attempting reconnection:");
         attempt_ws_reconnect();
-        qb::log::point("Finished reconnection.");
+        qb::log::point("Finished reconnection (Cause: 7).");
         break;
     }
     case 9:
     {
         qb::log::warn("Received opcode 9: Invalid session. Attempting reconnection:");
         attempt_ws_reconnect();
-        qb::log::point("Finished reconnection.");
+        qb::log::point("Finished reconnection (Cause: 9).");
         break;
     }
     case 11:
