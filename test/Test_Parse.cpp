@@ -183,3 +183,62 @@ TEST(Parse, decompose_command)
     // Numeric arguments
     ASSERT_EQ(cmd.numeric_arguments[0], 3421);
 }
+
+TEST(Parse, endswith)
+{
+    ASSERT_TRUE(endswith("Hello!", "o!"));
+    ASSERT_FALSE(endswith("Goodbye!", "o!"));
+}
+
+TEST(Parse, decompose_command_with_strings)
+{
+    auto cmd =
+        decompose_command(std::string{"empty-thing "
+                                      "\"hello! "
+                                      "4d5lifetime-subscriptions-to-walmart! "
+                                      "4d5h "
+                                      "4d5h5m2s "
+                                      "3421"});
+
+    ASSERT_EQ(cmd.numeric_arguments.size(), 1);
+    ASSERT_EQ(cmd.arguments.size(), 2);
+    ASSERT_EQ(cmd.duration_arguments.size(), 2);
+
+    // Arguments
+    ASSERT_EQ(cmd.arguments[0], "\"hello!");
+    ASSERT_EQ(cmd.arguments[1], "4d5lifetime-subscriptions-to-walmart!");
+
+    // Duration arguments
+    ASSERT_EQ(cmd.duration_arguments[0].count(),
+              std::chrono::duration<long>((4 * 24 * 60 * 60) + 5 * 60 * 60).count());
+    ASSERT_EQ(cmd.duration_arguments[1].count(),
+              std::chrono::duration<long>((4 * 24 * 60 * 60) + 5 * 60 * 60 + 5 * 60 + 2).count());
+
+    // Numeric arguments
+    ASSERT_EQ(cmd.numeric_arguments[0], 3421);
+}
+
+TEST(Parse, decompose_command_with_good_strings)
+{
+    auto cmd =
+        decompose_command(std::string{"empty-thing "
+                                      "\"hello! "
+                                      "4d5lifetime-subscriptions-to-walmart! "
+                                      "4d5h\" "
+                                      "4d5h5m2s "
+                                      "3421"});
+
+    EXPECT_EQ(cmd.numeric_arguments.size(), 1);
+    EXPECT_EQ(cmd.arguments.size(), 1);
+    EXPECT_EQ(cmd.duration_arguments.size(), 1);
+
+    // Arguments
+    EXPECT_EQ(cmd.arguments[0], "hello! 4d5lifetime-subscriptions-to-walmart! 4d5h");
+
+    // Duration arguments
+    EXPECT_EQ(cmd.duration_arguments[0].count(),
+              std::chrono::duration<long>((4 * 24 * 60 * 60) + 5 * 60 * 60 + 5 * 60 + 2).count());
+
+    // Numeric arguments
+    EXPECT_EQ(cmd.numeric_arguments[0], 3421);
+}

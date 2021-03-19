@@ -7,7 +7,6 @@
 #include <boost/asio/connect.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/error.hpp>
-#include <boost/beast/http.hpp>
 #include <boost/beast/version.hpp>
 #include <boost/beast/websocket.hpp>
 #include <boost/beast/websocket/ssl.hpp>
@@ -38,17 +37,17 @@ web::context::context()
 
 void web::context::initialize()
 {
-    qb::log::point("Looking up host: ", qb::urls::base, " at port: ", qb::strings::port);
+    qb::log::func("Web Context Initialization: ...Looking up host: ", qb::urls::base, " at port: ", qb::strings::port);
     const auto results = resolver.resolve(qb::urls::base, qb::strings::port);
 
-    qb::log::point("Connecting to the IP address.");
+    qb::log::func(" ...Connecting to the IP address.");
     beast::get_lowest_layer(stream_).connect(results);
 
-    qb::log::point("Performing SSL handshake.");
+    qb::log::func(" ...Performing SSL handshake.");
     stream_.handshake(asio::ssl::stream_base::client);
 
     initialized_ = true;
-    qb::log::point("Finished initializing web context.");
+    qb::log::func(" ...Finished.\n");
 }
 
 web::context::~context()
@@ -79,23 +78,23 @@ web::WSWrapper web::context::acquire_websocket(const std::string& psocket_url)
     assert(initialized_);
 
     /** Step 07 - Connect to the socket using websockets and SSL. **/
-    qb::log::point("Connecting to websocket at URL: ", psocket_url, " and port: ", qb::strings::port);
-    qb::log::point("Fixing the URL to remove wss://...");
+    qb::log::func("Context Acquiring Websocket: Connecting to websocket at URL: ", psocket_url, " and port: ", qb::strings::port);
+    qb::log::func("\n...Fixing the URL to remove wss://[...]");
     const auto socket_url = psocket_url.substr(6);
-    qb::log::point("Okay, using ", socket_url, " instead.");
+    qb::log::func(" ...Okay, using ", socket_url, " instead.");
 
     // These objects perform our I/O
     web::WSWrapper ws(ioc_);
 
-    qb::log::point("Resolving websocket URL.");
+    qb::log::func(" ...Resolving websocket URL.");
     auto const results = ws.resolver_.resolve(socket_url, qb::strings::port);
 
-    qb::log::point("WebSocket URL: ", socket_url);
+    qb::log::func(" ...WebSocket URL: ", socket_url);
 
-    qb::log::point("Connecting to the IP address using Asio.");
+    qb::log::func(" ...Connecting to the IP address using Asio.");
     asio::connect(ws->next_layer().next_layer(), results.begin(), results.end());
 
-    qb::log::point("Performing SSL handshake.");
+    qb::log::func(" ...Performing SSL handshake.");
     ws->next_layer().handshake(asio::ssl::stream_base::client);
 
     // Set a decorator to change the User-Agent of the handshake
@@ -104,8 +103,9 @@ web::WSWrapper web::context::acquire_websocket(const std::string& psocket_url)
                 std::string(BOOST_BEAST_VERSION_STRING) + " websocket-client-coro");
     }));
 
-    qb::log::point("Performing the websocket handshake.");
+    qb::log::func("\n...Performing the websocket handshake.");
     ws->handshake(socket_url, std::string(qb::endpoints::websocket));
+    qb::log::func(" ...WebSocket acquired.\n");
 
     return ws;
 }
@@ -126,37 +126,18 @@ std::string web::endpoint_str(Endpoint ep, const std::string& specifier)
     }
 }
 
-[[nodiscard]] nlohmann::json web::context::get(Endpoint ep)
-{
-    assert(initialized_);
-
-    qb::log::scope<std::string> slg("Creating an HTTP GET request...");
-    http::request<http::string_body> req{http::verb::get, endpoint_str(ep), qb::http_version};
-    req.set(http::field::host, qb::urls::base);
-    req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
-    req.set(http::field::authorization, "Bot " + qb::detail::get_bot_token());
-
-    // Step 03.1 - Send the HTTP request to the remote host
-    slg += " Writing an HTTP request...";
-    http::write(stream_, req);
-
-    beast::flat_buffer buffer;             // Useful buffer object
-    http::response<http::string_body> res; // Holds response
-
-    // Step 03.2 - Receive the HTTP response
-    slg += " Receiving HTTP response.";
-    // TODO wrap all this stuff in a helper. turns out we get disconnected sometimes.
-    // could not have seen that one coming!
+web::context::Result web::context::read(boost::beast::flat_buffer& buffer,
+                     boost::beast::http::response<boost::beast::http::string_body>& result) {
+    qb::log::func("web::context::read: Attempting to read from stream.");
     try
     {
-        http::read(stream_, buffer, res);
+        http::read(stream_, buffer, result);
     }
     catch (const std::exception& e)
     {
-        qb::log::warn("Got error: ", e.what(), " while reading the response to a GET request. (!!)");
+        qb::log::func("... Errored [", e.what(), "]");
         if (!failed_)
         {
-            slg.clear();
             failed_ = true;
             // It's possible our stream has somehow become disconnected
             // Instead of instantly erroring, let's set the fail check,
@@ -164,17 +145,46 @@ std::string web::endpoint_str(Endpoint ep, const std::string& specifier)
             shutdown();
             stream_ = boost::beast::ssl_stream<boost::beast::tcp_stream>{ioc_, ctx_};
             initialize();
-            return get(ep);
+            qb::log::func(" ...Retry.\n");
+            return Result::retry;
         }
         else
         {
             // Request failed twice in a row, could be a network issue.
             // In the future, this could be a longer timeout.
+            qb::log::func(" ...Fully errored (2x):\n");
             qb::log::err(e.what());
             throw e;
         }
     }
     failed_ = false;
+    qb::log::func(" ...Success.\n");
+    return Result::success;
+}
+
+[[nodiscard]] nlohmann::json web::context::get(Endpoint ep)
+{
+    assert(initialized_);
+
+    qb::log::func("Creating HTTP GET request.");
+    http::request<http::string_body> req{http::verb::get, endpoint_str(ep), qb::http_version};
+    req.set(http::field::host, qb::urls::base);
+    req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
+    req.set(http::field::authorization, "Bot " + qb::detail::get_bot_token());
+
+    // Step 03.1 - Send the HTTP request to the remote host
+    qb::log::func(" ...Writing the request.");
+    http::write(stream_, req);
+
+    beast::flat_buffer buffer;             // Useful buffer object
+    http::response<http::string_body> res; // Holds response
+
+    // Step 03.2 - Receive the HTTP response
+    qb::log::func(" ...Receiving HTTP response.\n");
+    if (read(buffer, res) == Result::retry)
+    {
+        return get(ep);
+    }
 
     // Step 04 - Translate the response to JSON
     return nlohmann::json::parse(res.body());
@@ -193,7 +203,7 @@ nlohmann::json web::context::post(Endpoint ep, const std::string& specifier, con
 {
     assert(initialized_);
 
-    qb::log::scope<std::string> slg("[HTTP POST request creation start.]");
+    qb::log::func("Creating HTTP Post request.");
     // Set up an HTTP POST request message
     http::request<http::string_body> req{http::verb::post, endpoint_str(ep, specifier), qb::http_version};
     req.set(http::field::host, qb::urls::base);
@@ -203,11 +213,12 @@ nlohmann::json web::context::post(Endpoint ep, const std::string& specifier, con
     req.set(http::field::content_type, "application/json");
     req.set(http::field::content_length, std::to_string(body.size()));
     req.prepare_payload();
-    slg += "\nSending the following request:\n";
-    std::stringstream s;
-    s << req;
-    slg += s.str();
-    if (ep == Endpoint::interactions && debug_) slg.log_contents();
+    if (debug_) {
+        qb::log::func(" ...Sending the following request:");
+        std::stringstream s;
+        s << req;
+        qb::log::func("\n", s.str(), "\n");
+    }
 
     // Send the HTTP request to the remote host
     http::write(stream_, req);
@@ -219,35 +230,11 @@ nlohmann::json web::context::post(Endpoint ep, const std::string& specifier, con
     http::response<http::string_body> res;
 
     // Receive the HTTP response
-    slg += ("\nReceiving POST response.");
-    try
+    qb::log::func(" ...Receiving POST response.");
+    if (read(buffer, res) == Result::retry)
     {
-        http::read(stream_, buffer, res);
+        return post(ep, specifier, body);
     }
-    catch (const std::exception& e)
-    {
-        qb::log::warn("Got error: ", e.what(), " while reading the response to a POST request.");
-        if (!failed_)
-        {
-            slg.clear();
-            failed_ = true;
-            // It's possible our stream has somehow become disconnected
-            // Instead of instantly erroring, let's set the fail check,
-            // reinitialize and try again.
-            shutdown();
-            stream_ = boost::beast::ssl_stream<boost::beast::tcp_stream>{ioc_, ctx_};
-            initialize();
-            return post(ep, specifier, body);
-        }
-        else
-        {
-            // Request failed twice in a row, could be a network issue.
-            // In the future, this could be a longer timeout.
-            throw e;
-        }
-    }
-    failed_ = false;
-    slg.clear();
 
     // for (auto const& field : res) qb::log::point("field: ", field.name_string(), " | value: ", field.value());
 
@@ -274,8 +261,7 @@ nlohmann::json web::context::patch(const std::string& uri, const std::string& bo
 {
     assert(initialized_);
 
-    qb::log::scope<std::string> slg("[HTTP PATCH request creation start.]");
-    // Set up an HTTP POST request message
+    qb::log::func("Creating an HTTP Patch request.");
     http::request<http::string_body> req{http::verb::patch, uri, qb::http_version};
     req.set(http::field::host, qb::urls::base);
     req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
@@ -284,10 +270,12 @@ nlohmann::json web::context::patch(const std::string& uri, const std::string& bo
     req.set(http::field::content_type, "application/json");
     req.set(http::field::content_length, std::to_string(body.size()));
     req.prepare_payload();
-    slg += "\nSending the following request:\n";
-    std::stringstream s;
-    s << req;
-    slg += s.str();
+    if (debug_) {
+        qb::log::func(" ...Sending the following request:");
+        std::stringstream s;
+        s << req;
+        qb::log::func("\n", s.str(), "\n");
+    }
 
     // Send the HTTP request to the remote host
     http::write(stream_, req);
@@ -299,35 +287,11 @@ nlohmann::json web::context::patch(const std::string& uri, const std::string& bo
     http::response<http::string_body> res;
 
     // Receive the HTTP response
-    slg += ("\nReceiving PATCH response.");
-    try
+    qb::log::func(" ...Receiving PATCH response.");
+    if (read(buffer, res) == Result::retry)
     {
-        http::read(stream_, buffer, res);
+        return patch(uri, body);
     }
-    catch (const std::exception& e)
-    {
-        qb::log::warn("Got error: ", e.what(), " while reading the response to a POST request.");
-        if (!failed_)
-        {
-            if (!debug_) slg.clear();
-            failed_ = true;
-            // It's possible our stream has somehow become disconnected
-            // Instead of instantly erroring, let's set the fail check,
-            // reinitialize and try again.
-            shutdown();
-            stream_ = boost::beast::ssl_stream<boost::beast::tcp_stream>{ioc_, ctx_};
-            initialize();
-            return patch(uri, body);
-        }
-        else
-        {
-            // Request failed twice in a row, could be a network issue.
-            // In the future, this could be a longer timeout.
-            throw e;
-        }
-    }
-    failed_ = false;
-    if (!debug_) slg.clear();
 
     // for (auto const& field : res) qb::log::point("field: ", field.name_string(), " | value: ", field.value());
 

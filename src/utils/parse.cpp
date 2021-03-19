@@ -158,6 +158,23 @@ qb::parse::DecomposedCommand qb::parse::decompose_command(const std::string& com
     if (cmds.size() < 2) return ret;
     for (auto itr = cmds.begin() + 1; itr != cmds.end(); itr++)
     {
+        bool found_str = false;
+        if (startswith(*itr, "\"")) {
+            for (auto itr_2 = itr; itr_2 != cmds.end(); itr_2++) {
+                if (endswith(*itr_2, "\"")) {
+                    found_str = true; 
+                    std::string s;
+                    for (; itr != itr_2 + 1; itr++) {
+                        s += *itr; 
+                        s += ' ';
+                    }
+                    itr = itr - 1;
+                    ret.arguments.emplace_back(s.substr(1, s.size() - 3));
+                    break;
+                }
+            }
+        }
+        if (found_str) continue;
         decompose_argument(ret, *itr);
     }
     return ret;

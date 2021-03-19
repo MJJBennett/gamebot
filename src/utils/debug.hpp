@@ -19,6 +19,21 @@ void normal(T t, Ts... ts)
     normal(std::forward<Ts>(ts)...);
 }
 
+template <typename T>
+void func(T t)
+{
+    std::cout << t;
+    std::flush(std::cout);
+}
+
+/** Logs plain, unformatted data. **/
+template <typename T, typename... Ts>
+void func(T t, Ts... ts)
+{
+    std::cout << t;
+    func(std::forward<Ts>(ts)...);
+}
+
 /** Logs things inside of quotes. **/
 template <typename T>
 void quoted(T t)
@@ -134,6 +149,8 @@ private:
     S s_{};
     bool should_log_{false};
 };
+
+
 
 } // namespace qb::log
 
