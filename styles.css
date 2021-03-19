@@ -1,0 +1,25 @@
+p, h2, h3
+{
+    font-family: Helvetica, Arial, sans-serif;
+    color: #333333;
+    font-size: 1em;
+}
+
+h2,h3
+{
+    font-size: 200%;
+    font-face: bold;
+}
+
+body
+{
+    line-height: 1.6em;
+    max-width: 30em;
+    margin: 3em auto;
+    font-size: 20px;
+}
+
+body, html
+{
+    height: 80%; 
+}
