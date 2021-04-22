@@ -24,6 +24,8 @@ std::vector<std::string> get_sets(const std::vector<std::string>& sets);
 void register_emote(std::string name, std::string emote);
 std::string get_emote(std::string name);
 std::vector<std::string> get_emotes(const std::vector<std::string>& names);
+
+std::vector<std::string> readlines_nonempty(const std::string& filename);
 } // namespace qb::fileio
 
 #endif // FILE_IO

@@ -209,3 +209,23 @@ void invalidate_emote_cache()
 {
     get_emote_cache().valid = false;
 }
+
+std::vector<std::string> qb::fileio::readlines_nonempty(const std::string& filename)
+{
+    std::ifstream is(filename);
+    if (!is)
+    {
+        // Couldn't open, assume the file doesn't exist yet.
+        qb::log::warn("Could not open file: ", filename);
+        return {};
+    }
+    std::string ln;
+    std::vector<std::string> res;
+
+    while (getline(is, ln))
+    {
+        if (auto tln = qb::parse::ltrim(ln, "\n\r\t "); tln != "")
+            res.emplace_back(std::move(tln));
+    }
+    return res;
+}

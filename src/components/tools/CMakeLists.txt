@@ -1,6 +1,10 @@
 target_sources(GameBot
     PRIVATE
-        reminder.cpp
+    #        reminder.cpp
+        sprint.cpp
+        todo.cpp
     PUBLIC
-        reminder.hpp
+    #    reminder.hpp
+        sprint.hpp
+        todo.hpp
 )

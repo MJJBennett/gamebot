@@ -1,6 +1,8 @@
 #include "bot.hpp"
 
 #include "components/games/gamequeue.hpp"
+#include "components/tools/sprint.hpp"
+#include "components/tools/todo.hpp"
 #include "components/games/hangman.hpp"
 #include "components/messages.hpp"
 #include "components/sentiment.hpp"
@@ -695,6 +697,12 @@ void qb::Bot::start()
 
     qb::QueueComponent queues;
     queues.register_actions(actions_);
+
+    qb::SprintComponent sprints;
+    sprints.register_actions(actions_);
+
+    qb::TodoComponent todos;
+    todos.register_actions(actions_);
 
     /**
      * Begin allowing completion handlers to fire.
