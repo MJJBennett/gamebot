@@ -59,6 +59,7 @@ struct DecomposedCommand {
     std::vector<std::string> arguments;
     std::vector<long> numeric_arguments;
     std::vector<std::chrono::duration<long>> duration_arguments;
+    std::vector<std::string> durations;
 };
 
 struct SplitNumber {
@@ -67,7 +68,7 @@ struct SplitNumber {
 };
 bool is_valid_time_trailer(const std::string& s);
 SplitNumber split_number(const std::string& s);
-void decompose_argument(DecomposedCommand& res, std::string in);
+void decompose_argument(DecomposedCommand& res, const std::string& in);
 DecomposedCommand decompose_command(const std::string& command);
 
 std::tuple<std::string, std::vector<std::string>> get_time(std::vector<std::string>);

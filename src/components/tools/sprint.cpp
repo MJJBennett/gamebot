@@ -11,7 +11,8 @@ std::string qb::Sprint::to_str() const
 {
     return "Running a sprint (" + get_name() + ") with **" +
            std::to_string(users.size()) + "** users. React with " +
-           qb::fileio::get_emote("yes") + " to join the sprint!";
+           qb::fileio::get_emote("yes") + " to join the sprint! " +
+           "\n**Sprint starting now, and going for: " + time_str_ + "**";
 }
 
 void qb::SprintComponent::register_actions(Actions<>& actions)
@@ -34,7 +35,7 @@ qb::Result qb::SprintComponent::add_sprint(const std::string& cmd, const api::Me
 
     // IIFE, very nice
     Sprint new_sprint = [&]() {
-        auto [args, numeric_args, duration_args] = qb::parse::decompose_command(cmd);
+        auto [args, numeric_args, duration_args, durations] = qb::parse::decompose_command(cmd);
         qb::log::point("Sprint creation: \n\tFound ", args.size(), " arguments\n\tFound ",
                        numeric_args.size(), " numeric args\n\tFound ", duration_args.size(),
                        " duration args");
@@ -44,14 +45,17 @@ qb::Result qb::SprintComponent::add_sprint(const std::string& cmd, const api::Me
             name = qb::parse::concatenate(args, " ");
         }
         std::chrono::duration<long> time = std::chrono::minutes(15);
+        std::string time_str = "15m";
         if (duration_args.size() != 0)
         {
             if (duration_args[0].count() < 10)
                 send_removable_message(bot, "Sorry, please choose a time that is greater than 10s. Using default time.", channel);
-            else
+            else {
                 time = duration_args[0];
+                time_str = durations[0];
+            }
         }
-        return Sprint(name, time);
+        return Sprint(name, time, time_str);
     }();
 
     auto endpoint = msg.endpoint();

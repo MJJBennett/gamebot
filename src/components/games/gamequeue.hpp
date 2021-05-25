@@ -17,8 +17,9 @@ public:
     Queue(std::optional<std::string> name,
           std::optional<std::string> game,
           std::optional<int> max_size,
-          std::optional<std::chrono::duration<long>> time)
-        : name_(name), game_(game), max_size_(max_size), time_(time)
+          std::optional<std::chrono::duration<long>> time,
+          std::optional<std::string> time_str)
+        : name_(name), game_(game), max_size_(max_size), time_(time), time_str_(time_str)
     {
     }
 
@@ -31,6 +32,10 @@ public:
     {
         return game_ ? *game_ : "anonymous game";
     }
+    std::string get_time_str() const
+    {
+        return time_str_ ? *time_str_ : "no start time";
+    }
     const std::optional<std::string> name_;
     const std::optional<std::string> game_;
 
@@ -41,6 +46,7 @@ public:
     std::optional<int> max_size_;
 
     std::optional<std::chrono::duration<long>> time_;
+    std::optional<std::string> time_str_;
 
     std::optional<boost::asio::steady_timer> timer_{};
 };

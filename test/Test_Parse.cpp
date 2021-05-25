@@ -127,6 +127,7 @@ TEST(Parse, decompose_argument)
     decompose_argument(cmd, s);
     EXPECT_EQ(cmd.numeric_arguments.size(), 0);
     EXPECT_EQ(cmd.duration_arguments.size(), 0);
+    EXPECT_EQ(cmd.durations.size(), 0);
     ASSERT_EQ(cmd.arguments.size(), 2);
     ASSERT_EQ(cmd.arguments[1], "4d5lifetime-subscriptions-to-walmart!");
 
@@ -134,6 +135,7 @@ TEST(Parse, decompose_argument)
     decompose_argument(cmd, s);
     EXPECT_EQ(cmd.numeric_arguments.size(), 0);
     EXPECT_EQ(cmd.duration_arguments.size(), 1);
+    EXPECT_EQ(cmd.durations.size(), 1);
     ASSERT_EQ(cmd.arguments.size(), 2);
     ASSERT_EQ(cmd.duration_arguments[0].count(),
               std::chrono::duration<long>((4 * 24 * 60 * 60) + 5 * 60 * 60).count());
@@ -142,11 +144,14 @@ TEST(Parse, decompose_argument)
     decompose_argument(cmd, s);
     EXPECT_EQ(cmd.numeric_arguments.size(), 0);
     EXPECT_EQ(cmd.duration_arguments.size(), 2);
+    EXPECT_EQ(cmd.durations.size(), 2);
     ASSERT_EQ(cmd.arguments.size(), 2);
     ASSERT_EQ(cmd.duration_arguments[0].count(),
               std::chrono::duration<long>((4 * 24 * 60 * 60) + 5 * 60 * 60).count());
     ASSERT_EQ(cmd.duration_arguments[1].count(),
               std::chrono::duration<long>((4 * 24 * 60 * 60) + 5 * 60 * 60 + 5 * 60 + 2).count());
+    ASSERT_EQ(cmd.durations[0], "4d5h");
+    ASSERT_EQ(cmd.durations[1], "4d5h5m2s");
 
     s = "3421";
     decompose_argument(cmd, s);

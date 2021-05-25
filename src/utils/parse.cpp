@@ -88,7 +88,7 @@ std::chrono::duration<long> get_seconds(const std::string& trailer, long num)
     return ld(0);
 }
 
-void qb::parse::decompose_argument(qb::parse::DecomposedCommand& res, std::string in)
+void qb::parse::decompose_argument(qb::parse::DecomposedCommand& res, const std::string& in)
 {
     try
     {
@@ -131,6 +131,7 @@ void qb::parse::decompose_argument(qb::parse::DecomposedCommand& res, std::strin
             if (prev_trail.empty())
             {
                 res.duration_arguments.push_back(s);
+                res.durations.push_back(in);
                 return;
             }
             auto [num, trail] = split_number(prev_trail);

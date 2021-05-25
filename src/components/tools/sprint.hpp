@@ -15,8 +15,9 @@ class Sprint
 {
 public:
     Sprint(std::optional<std::string> name,
-          std::chrono::duration<long> time)
-        : name_(name), time_(time)
+          std::chrono::duration<long> time,
+          std::string time_str)
+        : name_(name), time_(time), time_str_(time_str)
     {
     }
 
@@ -31,6 +32,7 @@ public:
     std::vector<std::string> users;
 
     std::chrono::duration<long> time_;
+    std::string time_str_;
 
     std::optional<boost::asio::steady_timer> timer_{};
 };

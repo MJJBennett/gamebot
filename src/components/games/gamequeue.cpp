@@ -10,9 +10,11 @@
 std::string qb::Queue::to_str() const
 {
     std::string max_players = max_size_ ? (" (Max **" + std::to_string(*max_size_) + "**)") : "";
-    return "Queueing a game of " + get_game() + " called " + get_name() + " with **" +
+    std::string ret_str = "Queueing a game of " + get_game() + " called " + get_name() + " with **" +
            std::to_string(users.size()) + "** players." + max_players + " React with " +
            qb::fileio::get_emote("yes") + " to join the queue!";
+    if (time_str_) ret_str += "\n**Starting in: " + get_time_str() + "**";
+    return ret_str;
 }
 
 void qb::QueueComponent::register_actions(Actions<>& actions)
@@ -35,7 +37,7 @@ qb::Result qb::QueueComponent::add_queue(const std::string& cmd, const api::Mess
 
     // IIFE, very nice
     Queue new_queue = [&]() {
-        auto [args, numeric_args, duration_args] = qb::parse::decompose_command(cmd);
+        auto [args, numeric_args, duration_args, durations] = qb::parse::decompose_command(cmd);
         qb::log::point("Queue creation: \n\tFound ", args.size(), " arguments\n\tFound ",
                        numeric_args.size(), " numeric args\n\tFound ", duration_args.size(),
                        " duration args");
@@ -56,14 +58,17 @@ qb::Result qb::QueueComponent::add_queue(const std::string& cmd, const api::Mess
             max_size = numeric_args[0];
         }
         std::optional<std::chrono::duration<long>> time;
+        std::optional<std::string> time_str;
         if (duration_args.size() != 0)
         {
             if (duration_args[0].count() < 10)
                 send_removable_message(bot, "Sorry, please choose a time that is greater than 10s.", channel);
-            else
+            else {
                 time = duration_args[0];
+                time_str = durations[0];
+            }
         }
-        return Queue(name, game, max_size, time);
+        return Queue(name, game, max_size, time, time_str);
     }();
 
     auto endpoint = msg.endpoint();
