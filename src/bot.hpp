@@ -5,6 +5,7 @@
 #include "components/action.hpp"
 #include "components/queue.hpp"
 #include "web/web.hpp"
+#include "utils/async_stdin.hpp"
 #include <boost/beast/core/flat_buffer.hpp>
 #include <boost/system/error_code.hpp>
 #include <optional>
@@ -105,6 +106,7 @@ private:
     boost::beast::flat_buffer buffer_;                 // Persistent read buffer
     std::optional<boost::asio::steady_timer> timer_{}; // Persistent write timer
     web::context* web_ctx_{nullptr};                   // Provides HTTP operations
+    std::unique_ptr<stdin_io> stdin_io_{nullptr};
 
     std::optional<std::string> identity_;
 

@@ -63,9 +63,12 @@ void web::context::shutdown()
     stream_.shutdown(ec);
     if (ec == asio::error::eof || ec == asio::ssl::error::stream_truncated || ec == asio::error::broken_pipe)
     {
-        qb::log::warn("Ignoring error: ", beast::system_error{ec}.what());
+        qb::log::warn("Ignoring error during web context shutdown: ", beast::system_error{ec}.what());
         ec = {};
     }
+
+    if (!ioc_.stopped()) ioc_.stop();
+
     if (ec)
     {
         qb::log::err("Encountered error while shutting down web context stream.");
