@@ -556,14 +556,23 @@ void qb::Bot::handle_io_read(const boost::system::error_code& error, std::size_t
 {
     if (error)
     {
-        qb::log::err("Encountered i/o read error: ", error.message(), " (", error.category().name(),
-                     ':', error.value(), ')');
-        return;
-    }      
+        if (error == boost::asio::error::misc_errors::not_found)
+        {
+            qb::log::err("Too much data input through STDIN. Bytes read: ", bytes_transferred);
+            stdin_io_->cleanse();
+        }
+        else
+        {
+            qb::log::err("Encountered i/o read error: ", error.message(), " (",
+                         error.category().name(), ':', error.value(), ')');
+            return;
+        }
+    }
     const auto cmd = stdin_io_->read(bytes_transferred);
     qb::log::point("Got i/o read: ", cmd);
-    if (cmd == "stop") {
-        shutdown(); 
+    if (cmd == "stop")
+    {
+        shutdown();
         return;
     }
     stdin_io_->async_read();

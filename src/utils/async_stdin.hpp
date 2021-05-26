@@ -17,6 +17,8 @@ namespace qb
 {
 struct stdin_io
 {
+    static constexpr size_t MAX_SIZE = 256;
+
     template <typename F>
     stdin_io(boost::asio::io_context& ioc, F&& handler)
         : io_stream(ioc, ::dup(STDIN_FILENO) /* Duplicates the stream */), io_handler(handler)
@@ -24,14 +26,21 @@ struct stdin_io
         qb::log::point("Created stdin i/o.");
     }
 
-    std::string read(std::size_t bytes) {
+    std::string read(std::size_t bytes)
+    {
         // maybe replace with this later
         // https://stackoverflow.com/questions/877652/copy-a-streambufs-contents-to-a-string
-        std::string out; 
+        if (bytes == 0) return {};
+        std::string out;
         out.resize(bytes - 1);
         io_buffer.sgetn(out.data(), bytes - 1);
         io_buffer.consume(1);
         return out;
+    }
+
+    void cleanse()
+    {
+        io_buffer.consume(io_buffer.size());
     }
 
     void async_read()
@@ -47,7 +56,7 @@ struct stdin_io
     }
 
     boost::asio::posix::stream_descriptor io_stream;
-    boost::asio::streambuf io_buffer{32};
+    boost::asio::streambuf io_buffer{MAX_SIZE};
     std::function<void(const boost::system::error_code& error, std::size_t bytes_transferred)> io_handler;
 };
 } // namespace qb
