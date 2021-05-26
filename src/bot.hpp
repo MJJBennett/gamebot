@@ -35,6 +35,8 @@ private:
     void read_handler(const boost::system::error_code& error, std::size_t bytes_transferred);
     // Called after any async_write completes.
     void write_complete_handler(const boost::system::error_code& error, std::size_t bytes_transferred);
+    // Called if we get IO input
+    void handle_io_read(const boost::system::error_code& error, std::size_t bytes_transferred);
 
     // Helper method: Sends a ping `ms` milliseconds after being called, asynchronously.
     void dispatch_ping_in(unsigned int ms);

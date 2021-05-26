@@ -11,6 +11,7 @@
 #include "utils/json_utils.hpp"
 #include "utils/parse.hpp" // For command parsing
 #include "utils/utils.hpp" // For get_bot_token
+#include "utils/async_stdin.hpp"
 #include <algorithm>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/beast/core.hpp>
@@ -663,17 +664,24 @@ void qb::Bot::attempt_ws_reconnect(bool start_read)
     ping_sender({});
 }
 
+void qb::Bot::handle_io_read(const boost::system::error_code& error, std::size_t bytes_transferred) {
+    qb::log::point("Got an io read.");
+}
+
 void qb::Bot::start()
 {
     // Some basic initialization prior to starting any networking calls.
     qb::log::point("Creating a web context.");
-    web::context web_context;
+    web::context web_context; // todo we need to fix the web context management so we can do it conditionally
     web_context.initialize();
     web_ctx_ = &web_context;
     dead     = false;
 
     qb::log::point("Creating timer for ping operations.");
     timer_.emplace(*web_context.ioc_ptr(), boost::asio::chrono::milliseconds(hb_interval_ms_));
+
+    qb::log::point("Potentially launching serverside I/O.");
+    qb::async_stdin_read(*web_context.ioc_ptr(), std::bind(&qb::Bot::handle_io_read, this, std::placeholders::_1, std::placeholders::_2));
 
     // Make API call to Discord /gateway/bot/ to get a WebSocket URL
     auto socket_info             = web_context.get(web::Endpoint::gateway_bot);
