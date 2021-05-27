@@ -1,11 +1,12 @@
 #ifndef BOT_HPP
 #define BOT_HPP
 
+#include "api/channel.hpp"
 #include "api/reaction.hpp"
 #include "components/action.hpp"
 #include "components/queue.hpp"
-#include "web/web.hpp"
 #include "utils/async_stdin.hpp"
+#include "web/web.hpp"
 #include <boost/beast/core/flat_buffer.hpp>
 #include <boost/system/error_code.hpp>
 #include <optional>
@@ -50,6 +51,7 @@ private:
     /** opcode and event handlers **/
     void handle_hello(const nlohmann::json& payload);
     void handle_event(const nlohmann::json& payload);
+    bool handle_command(const std::string& cmd, const qb::api::Message& msg, bool is_explicit = false);
 
     /** PUBLIC API
      * void send(std::string msg, std::string channel)
@@ -75,12 +77,18 @@ public: /** Send is a part of our public API currently. */
     void on_message_reaction(const api::Message& message, BasicAction<api::Reaction> action);
 
     // scary, will be removed one day
-    web::context* get_context() { return web_ctx_; }
+    web::context* get_context()
+    {
+        return web_ctx_;
+    }
 
     bool is_identity(const api::Message& message);
 
     // VERY BAD TODO THIS IS A HACK
-    std::optional<std::string>& idref() { return identity_; }
+    std::optional<std::string>& idref()
+    {
+        return identity_;
+    }
 
 private:
     /** Command handlers. **/
@@ -90,7 +98,7 @@ private:
     void recall(const std::string& cmd, const std::string& channel);
     void list(const std::string& cmd, const std::string& channel);
 
-    void configure(const std::string& cmd, const nlohmann::json& data);
+    void configure(const std::string& cmd, const api::Channel& channel);
     void recall_emote(const std::string& cmd, const std::string& channel);
     void assign_emote(const std::string& cmd, const std::string& channel);
 
@@ -122,10 +130,10 @@ private:
     bool write_outgoing_{false}; // Debug - Fully print outgoing WebSocket data.
     bool log_loud_{false};       // Debug - For lack of a better setup, this prints more.
 
-    // std::unordered_map<std::string, qb::queue> queues_; 
+    // std::unordered_map<std::string, qb::queue> queues_;
 
     // Our actual queues.
-    
+
     // Hashmap of callbacks; these are our commands.
     ::qb::Actions<api::Message> actions_;
 

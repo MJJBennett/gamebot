@@ -6,9 +6,11 @@
 #include <nlohmann/json.hpp>
 
 #include "api.hpp"
+#include "channel.hpp"
+#include "user.hpp"
 #include "utils/debug.hpp"
 #include "utils/json_utils.hpp"
-#include "user.hpp"
+#include "utils/parse.hpp"
 #include "web/strings.hpp"
 
 namespace qb::api
@@ -18,7 +20,7 @@ struct Message
 {
     Message() = default;
     Message(const std::string& id, const std::string& channel, const std::string& guild, User user)
-        : id(id), channel(channel), guild(guild), user(user)
+        : id(id), channel(channel, guild), user(user)
     {
     }
 
@@ -40,10 +42,46 @@ struct Message
         }
 
         return Message(source["id"], source["channel_id"],
-                       json_utils::def_str(source, "guild_id", ""),
-                       ::qb::api::User::create(source["author"])
+                       json_utils::def_str(source, "guild_id", ""), ::qb::api::User::create(source["author"])
 
-                        );
+        );
+    }
+
+    static std::optional<Message> create_easy(const std::string& source)
+    {
+        // @id=...;...
+        const auto assns = qb::parse::split(source, ';');
+        std::string id;
+        std::string cid;
+        std::string gid;
+        std::string uid;
+        int sure = 0;
+
+        for (const auto& s : assns)
+        {
+            const auto assn = qb::parse::split(s, '=');
+            if (assn.size() != 2)
+            {
+                qb::log::warn("Could not parse assignment: ", s);
+            }
+            else
+            {
+                sure++;
+                if (assn[0] == "id") id = assn[1];
+                else if (assn[0] == "cid" || assn[0] == "channel_id") cid = assn[1];
+                else if (assn[0] == "gid" || assn[0] == "guild_id") gid = assn[1];
+                else if (assn[0] == "uid" || assn[0] == "user_id") uid = assn[1];
+                else {
+                    qb::log::warn("Could not parse assignment of ", assn[0], " to ", assn[1]);
+                    sure--;
+                }
+            }
+        }
+        if (sure) {
+            qb::log::point("Successfully created a message.");
+            return qb::api::Message(id, cid, gid, qb::api::User(uid));
+        }
+        else return {};
     }
 
     std::string endpoint() const
@@ -52,8 +90,7 @@ struct Message
     }
 
     const std::string id;
-    const std::string channel;
-    const std::string guild;
+    const api::Channel channel{};
     const User user{};
 };
 } // namespace qb::api

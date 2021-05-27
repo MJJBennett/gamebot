@@ -73,7 +73,7 @@ qb::Result qb::QueueComponent::add_queue(const std::string& cmd, const api::Mess
 
     auto endpoint = msg.endpoint();
     bot.get_context()->del(endpoint);
-    send_yn_message(std::move(new_queue), bot, new_queue.to_str(), channel);
+    send_yn_message(std::move(new_queue), bot, new_queue.to_str(), channel.id);
     return qb::Result::ok();
 }
 

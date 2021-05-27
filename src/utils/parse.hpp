@@ -29,6 +29,10 @@ std::string rtrim(std::string str, const std::string& to_trim = " ");
 /** Splits a string by the character delimiter. **/
 std::vector<std::string> split(const std::string&, char delim = ' ');
 
+inline std::string get_until(const std::string& s, char delim) {
+    return std::string{s.begin(), std::find(s.begin(), s.end(), delim)};
+}
+
 /** Takes a string and returns if it is a stop command. **/
 inline bool is_stop(std::string msg)
 {

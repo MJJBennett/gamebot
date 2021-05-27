@@ -50,6 +50,72 @@ void qb::Bot::handle_hello(const json& payload)
     dispatch_write(identify_packet.dump());
 }
 
+bool qb::Bot::handle_command(const std::string& cmd, const qb::api::Message& msg, bool is_explicit)
+{
+    using namespace qb::parse;
+    namespace messages = qb::messages;
+
+    const auto& channel = msg.channel.id;
+    qb::log::point("Attempting to parse command: ", cmd);
+
+    if (!is_explicit) return false; // Handle as a message
+
+    if (startswithword(cmd, "stop"))
+        shutdown();
+    else if (startswith(cmd, "print "))
+        print(cmd, channel);
+    else if (startswith(cmd, "store"))
+        store(cmd, channel);
+    else if (startswithword(cmd, "online"))
+        send(qb::messages::online(), channel);
+    else if (startswithword(cmd, "list"))
+        list(cmd, channel);
+    else if (startswithword(cmd, "help"))
+        send(qb::messages::help, channel);
+    else if (startswithword(cmd, "db:writeincoming"))
+        write_incoming_ = true;
+    else if (startswithword(cmd, "db:nowriteincoming"))
+        write_incoming_ = false;
+    else if (startswithword(cmd, "db:loud"))
+        log_loud_ = true;
+    else if (startswithword(cmd, "db:noloud"))
+        log_loud_ = false;
+    else if (startswithword(cmd, "db:verboseweb"))
+        web_ctx_->debug_mode(true);
+    else if (startswithword(cmd, "db:noverboseweb"))
+        web_ctx_->debug_mode(false);
+    else if (startswithword(cmd, "recall"))
+        recall(cmd, channel);
+    else if (startswithword(cmd, "db:get_emotes"))
+        recall_emote(cmd, channel);
+    else if (startswith(cmd, "conf"))
+        configure(cmd, msg.channel);
+    else if (startswithword(cmd, "assign"))
+        assign_emote(cmd, channel);
+    else if (startswithword(cmd, "db:cursed-reconnect-code-copy-test"))
+    {
+        qb::log::err("Simulating opcode 7.");
+        qb::log::warn("Received opcode 7: Reconnect. Attempting reconnection:");
+        // DO NOT start a read, we'll start one after exiting here
+        attempt_ws_reconnect(false);
+        qb::log::point("Finished reconnection (Cause: Simulated 7).");
+    }
+    else
+    {
+        // Check if we have an action bound for this command
+        if (const auto& a = qb::parse::get_command_name(cmd); actions_.find(a) != actions_.end())
+        {
+            qb::log::point("Found an action based command.");
+            const auto _unused_retval = actions_[a](cmd, msg, *this);
+        }
+        else
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 /** Event handling - all user-interaction code starts here. **/
 void qb::Bot::handle_event(const json& payload)
 {
@@ -74,65 +140,17 @@ void qb::Bot::handle_event(const json& payload)
 
         // New Message!
         const auto contents = payload["d"]["content"];
-        if (qb::parse::is_command(contents))
+        const auto msg      = api::Message::create(payload["d"]);
+        bool isc = qb::parse::is_command(contents);
+        const std::string cmd = isc ? qb::parse::get_command(contents) : std::string{contents};
+        if (handle_command(cmd , msg, isc))
         {
-            const auto cmd     = qb::parse::get_command(contents);
-            const auto channel = payload["d"]["channel_id"];
-            qb::log::point("Attempting to parse command: ", cmd);
-
-            if (startswithword(cmd, "stop"))
-                shutdown();
-            else if (startswith(cmd, "print "))
-                print(cmd, channel);
-            // else if (startswith(cmd, "queue "))
-            //     queue(cmd, payload["d"]);
-            else if (startswith(cmd, "store"))
-                store(cmd, channel);
-            else if (startswithword(cmd, "online"))
-                send(qb::messages::online(), channel);
-            else if (startswithword(cmd, "list"))
-                list(cmd, channel);
-            else if (startswithword(cmd, "help"))
-                send(qb::messages::help, channel);
-            else if (startswithword(cmd, "db:writeincoming"))
-                write_incoming_ = true;
-            else if (startswithword(cmd, "db:nowriteincoming"))
-                write_incoming_ = false;
-            else if (startswithword(cmd, "db:loud"))
-                log_loud_ = true;
-            else if (startswithword(cmd, "db:noloud"))
-                log_loud_ = false;
-            else if (startswithword(cmd, "db:verboseweb"))
-                web_ctx_->debug_mode(true);
-            else if (startswithword(cmd, "db:noverboseweb"))
-                web_ctx_->debug_mode(false);
-            else if (startswithword(cmd, "recall"))
-                recall(cmd, channel);
-            else if (startswithword(cmd, "db:get_emotes"))
-                recall_emote(cmd, channel);
-            else if (startswith(cmd, "conf"))
-                configure(cmd, payload["d"]);
-            else if (startswithword(cmd, "assign"))
-                assign_emote(cmd, channel);
-            else if (startswithword(cmd, "db:cursed-reconnect-code-copy-test"))
-            {
-                qb::log::err("Simulating opcode 7.");
-                qb::log::warn("Received opcode 7: Reconnect. Attempting reconnection:");
-                // DO NOT start a read, we'll start one after exiting here
-                attempt_ws_reconnect(false);
-                qb::log::point("Finished reconnection (Cause: Simulated 7).");
-            }
-            else
-            {
-                // Check if we have an action bound for this command
-                if (const auto& a = qb::parse::get_command_name(cmd); actions_.find(a) != actions_.end())
-                {
-                    qb::log::point("Found an action based command.");
-                    const auto _unused_retval = actions_[a](cmd, api::Message::create(payload["d"]), *this);
-                }
-            }
+            return;
         }
-        else if (mode_1984_)
+
+        // NOT A COMMAND
+
+        if (mode_1984_)
         {
             if (qb::sentiment::is_negative(contents))
             {
@@ -322,19 +340,17 @@ void qb::Bot::recall(const std::string& cmd, const std::string& channel)
     }
 }
 
-void qb::Bot::configure(const std::string& cmd, const nlohmann::json& data)
+void qb::Bot::configure(const std::string& cmd, const api::Channel& channel)
 {
     using namespace qb::json_utils;
-    const std::string channel = def(data, "channel_id", std::string{});
-    const std::string guild   = def(data, "guild_id", std::string{});
 
-    if (cmd.size() == 4) return;
+    if (cmd.size() == 4) return; // `conf`
     const auto command = cmd.substr(5);
 
     if (command == "1984")
     {
         mode_1984_ = true;
-        send("Enabling 1985 mode.", channel);
+        send("Enabling 1985 mode.", channel.id);
     }
 }
 
@@ -554,6 +570,7 @@ void qb::Bot::attempt_ws_reconnect(bool start_read)
 
 void qb::Bot::handle_io_read(const boost::system::error_code& error, std::size_t bytes_transferred)
 {
+    using namespace qb::parse;
     if (error)
     {
         if (error == boost::asio::error::misc_errors::not_found)
@@ -574,6 +591,24 @@ void qb::Bot::handle_io_read(const boost::system::error_code& error, std::size_t
     {
         shutdown();
         return;
+    }
+
+    if (startswith(cmd, "@"))
+    {
+        const auto sp = std::find(cmd.begin(), cmd.end(), ' ');
+        if (sp != cmd.end()) {
+            const std::string ref{cmd.begin() + 1, sp};
+            const std::string acmd{sp + 1, cmd.end()};
+            qb::log::point("Note: Found ref: (", ref, ") & command: (", acmd, ")");
+            const auto msg = qb::api::Message::create_easy(ref);
+            if (!msg)
+                qb::log::warn("Failed to parse message qualifier.");
+            else if (!handle_command(acmd, *msg, true))
+            {
+                qb::log::warn("Could not parse i/o command into an actual command.");
+            }
+        }
+        else qb::log::warn("Could not split by space as there was nothing after the space.");
     }
     stdin_io_->async_read();
 }
