@@ -117,6 +117,8 @@ private:
     std::unique_ptr<stdin_io> stdin_io_{nullptr};
 
     std::optional<std::string> identity_;
+    
+    std::optional<api::Message> bound_msg_{};
 
     unsigned int hb_interval_ms_{0};      // Interval between heartbeats.
     bool outstanding_write_{false};       // True if an async_write is currently in progress.

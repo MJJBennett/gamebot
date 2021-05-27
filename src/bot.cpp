@@ -139,11 +139,11 @@ void qb::Bot::handle_event(const json& payload)
         }
 
         // New Message!
-        const auto contents = payload["d"]["content"];
-        const auto msg      = api::Message::create(payload["d"]);
-        bool isc = qb::parse::is_command(contents);
+        const auto contents   = payload["d"]["content"];
+        const auto msg        = api::Message::create(payload["d"]);
+        bool isc              = qb::parse::is_command(contents);
         const std::string cmd = isc ? qb::parse::get_command(contents) : std::string{contents};
-        if (handle_command(cmd , msg, isc))
+        if (handle_command(cmd, msg, isc))
         {
             return;
         }
@@ -596,19 +596,36 @@ void qb::Bot::handle_io_read(const boost::system::error_code& error, std::size_t
     if (startswith(cmd, "@"))
     {
         const auto sp = std::find(cmd.begin(), cmd.end(), ' ');
-        if (sp != cmd.end()) {
+        if (sp != cmd.end())
+        {
             const std::string ref{cmd.begin() + 1, sp};
             const std::string acmd{sp + 1, cmd.end()};
             qb::log::point("Note: Found ref: (", ref, ") & command: (", acmd, ")");
             const auto msg = qb::api::Message::create_easy(ref);
             if (!msg)
                 qb::log::warn("Failed to parse message qualifier.");
-            else if (!handle_command(acmd, *msg, true))
+            else
             {
-                qb::log::warn("Could not parse i/o command into an actual command.");
+                if (acmd == "bind")
+                {
+                    qb::log::point("Bound message.");
+                    bound_msg_.emplace(msg->id, msg->channel.id, msg->channel.guild, msg->user);
+                }
+                else if (!handle_command(acmd, *msg, true))
+                {
+                    qb::log::warn("Could not parse i/o command into an actual command.");
+                }
             }
         }
-        else qb::log::warn("Could not split by space as there was nothing after the space.");
+        else
+            qb::log::warn("Could not split by space as there was nothing after the space.");
+    }
+    else if (bound_msg_)
+    {
+        if (!handle_command(cmd, *bound_msg_, true))
+        {
+            qb::log::warn("Could not parse i/o command into an actual command.");
+        }
     }
     stdin_io_->async_read();
 }
