@@ -1,12 +1,12 @@
 #ifndef PARSE_HPP
 #define PARSE_HPP
 
+#include <algorithm>
+#include <chrono>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <vector>
-#include <optional>
-#include <algorithm>
-#include <chrono>
 
 namespace qb::api
 {
@@ -29,7 +29,8 @@ std::string rtrim(std::string str, const std::string& to_trim = " ");
 /** Splits a string by the character delimiter. **/
 std::vector<std::string> split(const std::string&, char delim = ' ');
 
-inline std::string get_until(const std::string& s, char delim) {
+inline std::string get_until(const std::string& s, char delim)
+{
     return std::string{s.begin(), std::find(s.begin(), s.end(), delim)};
 }
 
@@ -59,14 +60,16 @@ bool startswithword(const std::string& str, const std::string& start);
  * vector<int> 4
  * vector<std::chrono::duration::seconds> 10
  */
-struct DecomposedCommand {
+struct DecomposedCommand
+{
     std::vector<std::string> arguments;
     std::vector<long> numeric_arguments;
     std::vector<std::chrono::duration<long>> duration_arguments;
     std::vector<std::string> durations;
 };
 
-struct SplitNumber {
+struct SplitNumber
+{
     std::optional<long> number;
     std::string trailing;
 };
@@ -99,6 +102,12 @@ std::string get_command(std::string str);
 /** Returns command name (and potentially specifier). **/
 std::string get_command_name(std::string str);
 
+/** Returns command name (and potentially specifier). **/
+inline std::string get_command_specifier(const std::string& str)
+{
+    return std::string{std::find_if(str.begin(), str.end(), isspace), str.end()};
+}
+
 /** Concatenates strings. **/
 inline std::string concatenate(std::vector<std::string> strs, std::string sep = ", ")
 {
@@ -123,12 +132,13 @@ inline std::string concatenate_quoted(std::vector<std::string> strs, std::string
     return ret.substr(0, ret.size() - sep.size());
 }
 
-inline std::optional<std::string> emote_snowflake(const std::string& full_emote) {
+inline std::optional<std::string> emote_snowflake(const std::string& full_emote)
+{
     if (full_emote.size() == 0) return {};
     if (full_emote[0] & 0x10000000) return full_emote;
-    auto sf_begin = std::find_if(full_emote.rbegin(), full_emote.rend(), isdigit);    
+    auto sf_begin = std::find_if(full_emote.rbegin(), full_emote.rend(), isdigit);
     if (sf_begin == full_emote.rend()) return {};
-    auto sf_end = std::find_if(sf_begin, full_emote.rend(), [](char c) {return !isdigit(c);});
+    auto sf_end    = std::find_if(sf_begin, full_emote.rend(), [](char c) { return !isdigit(c); });
     const auto res = std::string{sf_end.base(), sf_begin.base()};
     if (res.size() < 4) return {};
     // now we need the name, apparently
@@ -136,16 +146,18 @@ inline std::optional<std::string> emote_snowflake(const std::string& full_emote)
     return name + res;
 }
 
-inline std::string get_trailingest_digits(const std::string& s) {
+inline std::string get_trailingest_digits(const std::string& s)
+{
     // this function probably does work correctly
-    auto b = std::find_if(s.rbegin(), s.rend(), isdigit);    
+    auto b = std::find_if(s.rbegin(), s.rend(), isdigit);
     if (b == s.rend()) return {};
-    auto sf_end = std::find_if(b, s.rend(), [](char c) {return !isdigit(c);});
+    auto sf_end    = std::find_if(b, s.rend(), [](char c) { return !isdigit(c); });
     const auto res = std::string{sf_end.base(), b.base()};
     return res;
 }
 
-inline bool compare_emotes(const std::string& l, const std::string& r) {
+inline bool compare_emotes(const std::string& l, const std::string& r)
+{
     // this function is ALMOST guaranteed to not work properly
     // just, you know, just saying
     const auto dr = get_trailingest_digits(r);

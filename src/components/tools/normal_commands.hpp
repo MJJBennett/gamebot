@@ -6,11 +6,23 @@
 #include <chrono>
 #include <memory>
 #include <optional>
+#include <unordered_map>
+#include <unordered_set>
 
 #include <boost/asio/steady_timer.hpp>
 
 namespace qb
 {
+struct Poll {
+    struct Option {
+        std::string name;
+        std::string id;
+        size_t votes{0};
+    };
+    std::unordered_set<std::string> voters;
+    std::vector<Option> options;
+};
+
 class CommandsComponent : public Component
 {
 public:
@@ -23,6 +35,7 @@ public:
 
     void dump_debug() const;
 private:
+    std::unordered_map<std::string, Poll> polls;
 };
 
 } // namespace qb

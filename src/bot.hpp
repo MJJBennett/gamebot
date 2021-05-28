@@ -72,6 +72,7 @@ public: /** Send is a part of our public API currently. */
     // Sends a message in a Discord channel.
     nlohmann::json send(std::string msg, std::string channel);
     nlohmann::json send_json(const nlohmann::json& json, std::string channel);
+    nlohmann::json send_json(const nlohmann::json& json, const api::Interaction& interaction);
     nlohmann::json send_test(std::string msg, std::string channel);
 
     // UNIMPLEMENTED

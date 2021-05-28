@@ -11,6 +11,11 @@
 #include <boost/beast/ssl.hpp>
 #include <nlohmann/json.hpp>
 
+// Endpoints
+#include "strings.hpp"
+#include "api/channel.hpp"
+#include "api/interaction.hpp"
+
 namespace web
 {
 enum class Endpoint
@@ -48,8 +53,13 @@ public:
     // Performs an HTTP GET request to the desired Discord endpoint.
     [[nodiscard]] nlohmann::json get(Endpoint);
     // Performs an HTTP POST request to the desired Discord endpoint.
+    nlohmann::json post(const std::string& specifier, const std::string& body);
     nlohmann::json post(Endpoint, const std::string& specifier, const std::string& body);
     nlohmann::json post(Endpoint, const std::vector<std::string>& specifiers, const std::string& body);
+    template<typename T>
+    nlohmann::json post(const T& location, const std::string& body) {
+        return post(qb::endpoints::of(location), body);
+    }
 
     nlohmann::json put(const EndpointURI& uri, const std::string& body);
     nlohmann::json del(const std::string& uri);

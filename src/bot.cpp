@@ -2,9 +2,9 @@
 
 #include "components/games/gamequeue.hpp"
 #include "components/games/hangman.hpp"
-#include "components/tools/normal_commands.hpp"
 #include "components/messages.hpp"
 #include "components/sentiment.hpp"
+#include "components/tools/normal_commands.hpp"
 #include "components/tools/sprint.hpp"
 #include "components/tools/todo.hpp"
 #include "utils/async_stdin.hpp"
@@ -169,7 +169,7 @@ void qb::Bot::handle_event(const json& payload)
         qb::log::point("An interaction was sent. Executing callbacks.");
         const auto d = api::Interaction::create(payload["d"]);
         execute_callbacks<qb::api::Interaction>(*this, d.key(), d, message_interaction_callbacks_);
-         
+
         /*
         if (const auto interact_id = j::get_opt<std::string>(d, "id"); interact_id)
         {
@@ -202,8 +202,8 @@ void qb::Bot::handle_event(const json& payload)
         // TODO should really just be passing the message...
         qb::log::point("Execute relevant callbacks.");
 
-        execute_callbacks<qb::api::Reaction>(*this, msg.message_id, msg, message_reaction_callbacks_,
-                                             et == "MESSAGE_REACTION_ADD");
+        execute_callbacks<qb::api::Reaction>(
+            *this, msg.message_id, msg, message_reaction_callbacks_, et == "MESSAGE_REACTION_ADD");
     }
 }
 
@@ -282,7 +282,26 @@ nlohmann::json qb::Bot::send(std::string msg, std::string channel)
     }
     nlohmann::json msg_json{{"content", msg}};
     const auto resp = web_ctx_->post(web::Endpoint::channels, channel, msg_json.dump());
-    if (!identity_)
+    if (!identity_ && resp.contains("author"))
+    {
+        identity_ = resp["author"]["id"];
+        qb::log::point("Setting identity to: ", *identity_);
+    }
+    if (log_loud_) qb::log::data("Response", resp.dump(2));
+    return resp;
+}
+
+nlohmann::json qb::Bot::send_json(const nlohmann::json& msg, const api::Interaction& interaction)
+{
+    if (msg.value("content", "").size() > 2000 && interaction.channel)
+    {
+        send("I can't do that. [Message length too large: " + std::to_string(msg["content"].size()) +
+                 " - Must be 2000 or less.]",
+             interaction.channel->id);
+        return {};
+    }
+    const auto resp = web_ctx_->post(interaction, msg.dump());
+    if (!identity_ && resp.contains("author"))
     {
         identity_ = resp["author"]["id"];
         qb::log::point("Setting identity to: ", *identity_);
@@ -301,7 +320,7 @@ nlohmann::json qb::Bot::send_json(const nlohmann::json& msg, std::string channel
         return {};
     }
     const auto resp = web_ctx_->post(web::Endpoint::channels, channel, msg.dump());
-    if (!identity_)
+    if (!identity_ && resp.contains("author"))
     {
         identity_ = resp["author"]["id"];
         qb::log::point("Setting identity to: ", *identity_);
