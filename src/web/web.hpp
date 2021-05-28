@@ -40,7 +40,7 @@ public:
 
     ~context();
     // Shuts down the web context (mainly the HTTP stream).
-    void shutdown();
+    void shutdown(bool soft = true);
 
     // Returns a wrapped WebSocket connection to the url passed as a parameter.
     [[nodiscard]] WSWrapper acquire_websocket(const std::string& url);

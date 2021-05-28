@@ -52,10 +52,10 @@ void web::context::initialize()
 
 web::context::~context()
 {
-    if (initialized_) shutdown();
+    if (initialized_) shutdown(true);
 }
 
-void web::context::shutdown()
+void web::context::shutdown(bool soft)
 {
     initialized_ = false;
     // Properly close the stream to make sure the remote server is aware.
@@ -67,7 +67,7 @@ void web::context::shutdown()
         ec = {};
     }
 
-    if (!ioc_.stopped()) ioc_.stop();
+    if (!soft && !ioc_.stopped()) ioc_.stop();
 
     if (ec)
     {

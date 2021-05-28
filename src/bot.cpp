@@ -711,7 +711,7 @@ void qb::Bot::shutdown()
         qb::log::warn("Error while attempting to disconnect websocket: ", e.what());
     }
     ws_.reset();
-    web_ctx_->shutdown();
+    web_ctx_->shutdown(true);
     qb::log::point("Shutdown completed.");
 }
 
