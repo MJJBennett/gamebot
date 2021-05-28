@@ -39,6 +39,7 @@ private:
     void write_complete_handler(const boost::system::error_code& error, std::size_t bytes_transferred);
     // Called if we get IO input
     void handle_io_read(const boost::system::error_code& error, std::size_t bytes_transferred);
+    void handle_io_read_str(const std::string& cmd);
 
     // Helper method: Sends a ping `ms` milliseconds after being called, asynchronously.
     void dispatch_ping_in(unsigned int ms);
@@ -69,6 +70,7 @@ private:
 public: /** Send is a part of our public API currently. */
     // Sends a message in a Discord channel.
     nlohmann::json send(std::string msg, std::string channel);
+    nlohmann::json send_test(std::string msg, std::string channel);
 
     // UNIMPLEMENTED
     bool dispatch_in(ActionCallback action, std::chrono::duration<long> when);
@@ -93,6 +95,7 @@ public: /** Send is a part of our public API currently. */
 private:
     /** Command handlers. **/
     void print(const std::string& cmd, const std::string& channel);
+    void test(const std::string& cmd, const std::string& channel);
     void queue(const std::string& cmd, const nlohmann::json& data);
     void store(const std::string& cmd, const std::string& channel);
     void recall(const std::string& cmd, const std::string& channel);
