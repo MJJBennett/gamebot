@@ -60,7 +60,7 @@ qb::Result qb::SprintComponent::add_sprint(const std::string& cmd, const api::Me
 
     auto endpoint = msg.endpoint();
     bot.get_context()->del(endpoint);
-    send_yn_message(std::move(new_sprint), bot, new_sprint.to_str(), channel);
+    send_yn_message(std::move(new_sprint), bot, new_sprint.to_str(), channel.id);
     return qb::Result::ok();
 }
 

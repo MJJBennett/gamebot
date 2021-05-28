@@ -14,13 +14,22 @@ nlohmann::json qb::Component::send_removable_message(Bot& bot, const std::string
     return resp;
 }
 
+nlohmann::json qb::Component::send_removable_message(Bot& bot, const std::string& message, const api::Channel& channel)
+{
+    qb::log::point("Sending a removable message.");
+    const auto resp = bot.send(message, channel.id);
+    if (resp.empty()) return {};
+    bot.on_message_id(resp["id"], bind_message_action(&qb::Component::add_delete_reaction, this));
+    return resp;
+}
+
 qb::Result qb::Component::add_delete_reaction(const std::string& message_id, const api::Message& message, Bot& bot)
 {
     
     // temporary until we have proper api wrappers (hah)
     if (const auto& emote = qb::parse::emote_snowflake(qb::fileio::get_emote("remove_message")); emote)
     {
-        bot.get_context()->put(qb::endpoints::reaction(message.channel, message_id, *emote), {});
+        bot.get_context()->put(qb::endpoints::reaction(message.channel.id, message_id, *emote), {});
         qb::log::point("Added remove_message reaction to message ID ", message_id);
 
         // Now we need to monitor this message and delete it when the remove_message emote

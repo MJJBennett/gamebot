@@ -52,10 +52,10 @@ void web::context::initialize()
 
 web::context::~context()
 {
-    if (initialized_) shutdown();
+    if (initialized_) shutdown(true);
 }
 
-void web::context::shutdown()
+void web::context::shutdown(bool soft)
 {
     initialized_ = false;
     // Properly close the stream to make sure the remote server is aware.
@@ -63,9 +63,12 @@ void web::context::shutdown()
     stream_.shutdown(ec);
     if (ec == asio::error::eof || ec == asio::ssl::error::stream_truncated || ec == asio::error::broken_pipe)
     {
-        qb::log::warn("Ignoring error: ", beast::system_error{ec}.what());
+        qb::log::warn("Ignoring error during web context shutdown: ", beast::system_error{ec}.what());
         ec = {};
     }
+
+    if (!soft && !ioc_.stopped()) ioc_.stop();
+
     if (ec)
     {
         qb::log::err("Encountered error while shutting down web context stream.");

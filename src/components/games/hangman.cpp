@@ -29,7 +29,7 @@ qb::Result qb::Hangman::guess_hangman(const std::string& cmd, const api::Message
     const auto guess = qb::parse::trim(std::string(std::find(cmd.begin(), cmd.end(), ' '), cmd.end()));
     if (guess_word(guess))
     {
-        bot.send(msg.user.username.value_or("That") + " is correct! The word is " + word_ + "! Game ending...", channel);
+        bot.send(msg.user.username.value_or("That") + " is correct! The word is " + word_ + "! Game ending...", channel.id);
         reset();
         return qb::Result::ok();
     }

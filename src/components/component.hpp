@@ -33,6 +33,8 @@ protected:
     }
 
     nlohmann::json send_removable_message(Bot& bot, const std::string& message, const std::string& channel);
+
+    nlohmann::json send_removable_message(Bot& bot, const std::string& message, const api::Channel& channel);
     
 
     template<typename Func, typename Class>
