@@ -39,7 +39,7 @@ const auto channel_msg      = [](const std::string& channel_id) {
 inline std::string message(const std::string& channel_id, const std::string& message_id)
 {
     return "/api/v8/channels/" + channel_id + "/messages/" + message_id;
-};
+}
 const auto interaction = [](const std::string& specifier) {
     return "/api/v8/interactions" + specifier;
 };
@@ -48,7 +48,7 @@ inline web::EndpointURI reaction(const std::string& channel_id, const std::strin
 {
     return web::EndpointURI{"/api/v8/channels/" + channel_id + "/messages/" + message_id +
                             "/reactions/" + emoji + "/@me"};
-};
+}
 } // namespace endpoints
 
 } // namespace qb

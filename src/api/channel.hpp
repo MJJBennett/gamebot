@@ -28,7 +28,7 @@ inline web::EndpointURI reaction(const qb::api::Channel& channel, const std::str
 {
     return web::EndpointURI{"/api/v8/channels/" + channel.id + "/messages/" + message_id +
                             "/reactions/" + emoji + "/@me"};
-};
+}
 } // namespace qb::endpoints
 
 #endif // QB_CHANNEL_HPP

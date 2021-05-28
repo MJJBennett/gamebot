@@ -2,7 +2,8 @@
 #define ASYNC_STDIN_HPP
 
 #if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
-#pragma message "Compiling with STDIN support ENABLED."
+#define QB_USING_STDIN 1
+// #pragma message "Compiling with STDIN support ENABLED."
 
 #include "debug.hpp"
 
@@ -61,7 +62,6 @@ struct stdin_io
 };
 } // namespace qb
 #else
-#pragma message "Compiling with STDIN support DISABLED."
 namespace qb
 {
 struct stdin_io
@@ -71,12 +71,21 @@ struct stdin_io
     {
     }
 
+    void cleanse()
+    {
+    }
+
     void async_read()
     {
     }
 
     void close()
     {
+    }
+
+    std::string read(std::size_t bytes)
+    {
+        return "";
     }
 };
 } // namespace qb
