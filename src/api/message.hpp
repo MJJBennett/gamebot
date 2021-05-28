@@ -24,6 +24,8 @@ struct Message
     {
     }
 
+    Message(const Message& other) : id(other.id), channel(other.channel), user(other.user) {}
+
     template <bool safe = false>
     static Message create(const json& source)
     {

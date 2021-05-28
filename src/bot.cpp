@@ -4,6 +4,7 @@
 #include "components/games/hangman.hpp"
 #include "components/messages.hpp"
 #include "components/sentiment.hpp"
+#include "components/tools/normal_commands.hpp"
 #include "components/tools/sprint.hpp"
 #include "components/tools/todo.hpp"
 #include "utils/async_stdin.hpp"
@@ -64,6 +65,8 @@ bool qb::Bot::handle_command(const std::string& cmd, const qb::api::Message& msg
         shutdown();
     else if (startswith(cmd, "print "))
         print(cmd, channel);
+    else if (startswith(cmd, "test "))
+        test(cmd.substr(5), channel);
     else if (startswith(cmd, "store"))
         store(cmd, channel);
     else if (startswithword(cmd, "online"))
@@ -163,8 +166,11 @@ void qb::Bot::handle_event(const json& payload)
     }
     else if (et == "INTERACTION_CREATE")
     {
-        qb::log::point("An interaction was sent.");
-        const auto d = payload["d"];
+        qb::log::point("An interaction was sent. Executing callbacks.");
+        const auto d = api::Interaction::create(payload["d"]);
+        execute_callbacks<qb::api::Interaction>(*this, d.key(), d, message_interaction_callbacks_);
+
+        /*
         if (const auto interact_id = j::get_opt<std::string>(d, "id"); interact_id)
         {
             if (const auto interact_tok = j::get_opt<std::string>(d, "token"); interact_tok)
@@ -176,20 +182,28 @@ void qb::Bot::handle_event(const json& payload)
                     interact_json.dump());
             }
         }
+        */
     }
     else if (et == "READY")
     {
         qb::log::point("A ready payload was sent.");
+        // Quick, autoload things.
+        const auto autoexec = qb::fileio::readlines_nonempty(qb::config::autoexec_file());
+        for (const auto& exec : autoexec)
+        {
+            handle_io_read_str(exec);
+        }
     }
     else if (et == "MESSAGE_REACTION_ADD" || et == "MESSAGE_REACTION_REMOVE")
     {
         qb::log::point("A reaction was added to a message.");
+        // Message that was reacted to
         auto msg = api::Reaction::create(payload["d"]);
         // TODO should really just be passing the message...
         qb::log::point("Execute relevant callbacks.");
 
-        execute_callbacks<qb::api::Reaction>(*this, msg.message_id, payload["d"], message_reaction_callbacks_,
-                                             et == "MESSAGE_REACTION_ADD");
+        execute_callbacks<qb::api::Reaction>(
+            *this, msg.message_id, msg, message_reaction_callbacks_, et == "MESSAGE_REACTION_ADD");
     }
 }
 
@@ -213,6 +227,50 @@ bool qb::Bot::is_identity(const api::Message& message)
     return message.user.id == *identity_;
 }
 
+nlohmann::json qb::Bot::send_test(std::string msg, std::string channel)
+{
+    if (msg.size() > 2000)
+    {
+        send("I can't do that. [Message length too large: " + std::to_string(msg.size()) +
+                 " - Must be 2000 or less.]",
+             channel);
+        return {};
+    }
+    json msg_json{{"content", msg}, {"components", json::array()}};
+    msg_json["components"].push_back({{"type", 1}, {"components", json::array()}});
+    /* {
+     *  "content": msg,
+     *  "components": [
+     *          {
+     *              "type", 1,
+     *              "components": [
+     *              ]
+     *          }
+     *      ]
+     * }
+     */
+    json my_component{{"type", 2}, {"label", "Test!"}, {"style", 1}, {"custom_id", "click_one"}};
+    msg_json["components"][0]["components"].push_back({{"type", 1}, {"components", json::array()}});
+    msg_json["components"][0]["components"][0] = my_component;
+    qb::log::point(msg_json.dump(2));
+    const auto resp = web_ctx_->post(web::Endpoint::channels, channel, msg_json.dump());
+    if (!identity_)
+    {
+        if (json_utils::has_path(resp, "author", "id"))
+        {
+            identity_ = resp["author"]["id"];
+            qb::log::point("Setting identity to: ", *identity_);
+        }
+        else
+        {
+            qb::log::data("Note Response", resp.dump(2));
+            return resp;
+        }
+    }
+    if (log_loud_) qb::log::data("Response", resp.dump(2));
+    return resp;
+}
+
 nlohmann::json qb::Bot::send(std::string msg, std::string channel)
 {
     if (msg.size() > 2000)
@@ -222,9 +280,47 @@ nlohmann::json qb::Bot::send(std::string msg, std::string channel)
              channel);
         return {};
     }
-    json msg_json{{"content", msg}};
+    nlohmann::json msg_json{{"content", msg}};
     const auto resp = web_ctx_->post(web::Endpoint::channels, channel, msg_json.dump());
-    if (!identity_)
+    if (!identity_ && resp.contains("author"))
+    {
+        identity_ = resp["author"]["id"];
+        qb::log::point("Setting identity to: ", *identity_);
+    }
+    if (log_loud_) qb::log::data("Response", resp.dump(2));
+    return resp;
+}
+
+nlohmann::json qb::Bot::send_json(const nlohmann::json& msg, const api::Interaction& interaction)
+{
+    if (msg.value("content", "").size() > 2000 && interaction.channel)
+    {
+        send("I can't do that. [Message length too large: " + std::to_string(msg["content"].size()) +
+                 " - Must be 2000 or less.]",
+             interaction.channel->id);
+        return {};
+    }
+    const auto resp = web_ctx_->post(interaction, msg.dump());
+    if (!identity_ && resp.contains("author"))
+    {
+        identity_ = resp["author"]["id"];
+        qb::log::point("Setting identity to: ", *identity_);
+    }
+    if (log_loud_) qb::log::data("Response", resp.dump(2));
+    return resp;
+}
+
+nlohmann::json qb::Bot::send_json(const nlohmann::json& msg, std::string channel)
+{
+    if (msg.value("content", "").size() > 2000)
+    {
+        send("I can't do that. [Message length too large: " + std::to_string(msg["content"].size()) +
+                 " - Must be 2000 or less.]",
+             channel);
+        return {};
+    }
+    const auto resp = web_ctx_->post(web::Endpoint::channels, channel, msg.dump());
+    if (!identity_ && resp.contains("author"))
     {
         identity_ = resp["author"]["id"];
         qb::log::point("Setting identity to: ", *identity_);
@@ -258,6 +354,15 @@ void qb::Bot::on_message_reaction(const api::Message& message, BasicAction<api::
     message_reaction_callbacks_[message.id].emplace_back(std::move(action));
 }
 
+void qb::Bot::on_message_interaction(const std::string& key, BasicAction<api::Interaction> action)
+{
+    if (message_interaction_callbacks_.find(key) == message_interaction_callbacks_.end())
+    {
+        message_interaction_callbacks_.try_emplace(key);
+    }
+    message_interaction_callbacks_[key].emplace_back(std::move(action));
+}
+
 /*****
  *
  * User interaction logic.
@@ -267,6 +372,12 @@ void qb::Bot::on_message_reaction(const api::Message& message, BasicAction<api::
 void qb::Bot::print(const std::string& cmd, const std::string& channel)
 {
     send(cmd.substr(6), channel);
+}
+
+void qb::Bot::test(const std::string& cmd, const std::string& channel)
+{
+    qb::log::point("Doing test send with command: ", cmd);
+    send_test(cmd, channel);
 }
 
 void qb::Bot::list(const std::string&, const std::string& channel)
@@ -568,24 +679,9 @@ void qb::Bot::attempt_ws_reconnect(bool start_read)
     ping_sender({});
 }
 
-void qb::Bot::handle_io_read(const boost::system::error_code& error, std::size_t bytes_transferred)
+void qb::Bot::handle_io_read_str(const std::string& cmd)
 {
     using namespace qb::parse;
-    if (error)
-    {
-        if (error == boost::asio::error::misc_errors::not_found)
-        {
-            qb::log::err("Too much data input through STDIN. Bytes read: ", bytes_transferred);
-            stdin_io_->cleanse();
-        }
-        else
-        {
-            qb::log::err("Encountered i/o read error: ", error.message(), " (",
-                         error.category().name(), ':', error.value(), ')');
-            return;
-        }
-    }
-    const auto cmd = stdin_io_->read(bytes_transferred);
     qb::log::point("Got i/o read: ", cmd);
     if (cmd == "stop")
     {
@@ -628,6 +724,26 @@ void qb::Bot::handle_io_read(const boost::system::error_code& error, std::size_t
         }
     }
     stdin_io_->async_read();
+}
+
+void qb::Bot::handle_io_read(const boost::system::error_code& error, std::size_t bytes_transferred)
+{
+    using namespace qb::parse;
+    if (error)
+    {
+        if (error == boost::asio::error::misc_errors::not_found)
+        {
+            qb::log::err("Too much data input through STDIN. Bytes read: ", bytes_transferred);
+            stdin_io_->cleanse();
+        }
+        else
+        {
+            qb::log::err("Encountered i/o read error: ", error.message(), " (",
+                         error.category().name(), ':', error.value(), ')');
+            return;
+        }
+    }
+    handle_io_read_str(stdin_io_->read(bytes_transferred));
 }
 
 void qb::Bot::start()
@@ -677,6 +793,9 @@ void qb::Bot::start()
     qb::TodoComponent todos;
     todos.register_actions(actions_);
 
+    qb::CommandsComponent commands;
+    commands.register_actions(actions_);
+
     /**
      * Begin allowing completion handlers to fire.
      * Blocking call - anything after this is only executed after
@@ -711,7 +830,7 @@ void qb::Bot::shutdown()
         qb::log::warn("Error while attempting to disconnect websocket: ", e.what());
     }
     ws_.reset();
-    web_ctx_->shutdown(true);
+    web_ctx_->shutdown(false);
     qb::log::point("Shutdown completed.");
 }
 

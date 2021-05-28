@@ -56,6 +56,7 @@ using Actions = std::unordered_map<std::string, BasicAction<DataType>>;
 template <typename DataType = api::Message>
 using MultiActions = std::unordered_map<std::string, std::vector<BasicAction<DataType>>>;
 
+// DEPRECATED
 template <typename DataType = api::Message>
 bool execute_callbacks(Bot& bot, const std::string& key, const nlohmann::json& json_data, MultiActions<DataType>& callbacks)
 {
@@ -75,6 +76,7 @@ bool execute_callbacks(Bot& bot, const std::string& key, const nlohmann::json& j
 
     return false; // return true when the action wants to not parse as a command, TODO
 }
+// DEPRECATED
 template <typename DataType = api::Message>
 bool execute_callbacks(Bot& bot, const std::string& key, const nlohmann::json& json_data, MultiActions<DataType>& callbacks, int choice)
 {
@@ -85,6 +87,46 @@ bool execute_callbacks(Bot& bot, const std::string& key, const nlohmann::json& j
     l.erase(std::remove_if(l.begin(), l.end(),
                            [&](auto& cb) {
                                auto res = cb(key, DataType::create(json_data), bot, choice);
+                               // TODO we support errors? apparently? probably no good
+                               return *res.val != qb::Result::Value::PersistCallback;
+                           }),
+            l.end());
+
+    if (l.empty()) callbacks.erase(key);
+
+    return false; // return true when the action wants to not parse as a command, TODO
+}
+
+template <typename DataType = api::Message>
+bool execute_callbacks(Bot& bot, const std::string& key, const DataType& data, MultiActions<DataType>& callbacks)
+{
+    if (callbacks.find(key) == callbacks.end()) return false;
+
+    auto& l = callbacks[key];
+
+    l.erase(std::remove_if(l.begin(), l.end(),
+                           [&](auto& cb) {
+                               auto res = cb(key, data, bot);
+                               // TODO we support errors? apparently? probably no good
+                               return *res.val != qb::Result::Value::PersistCallback;
+                           }),
+            l.end());
+
+    if (l.empty()) callbacks.erase(key);
+
+    return false; // return true when the action wants to not parse as a command, TODO
+}
+
+template <typename DataType = api::Message>
+bool execute_callbacks(Bot& bot, const std::string& key, const DataType& data, MultiActions<DataType>& callbacks, int choice)
+{
+    if (callbacks.find(key) == callbacks.end()) return false;
+
+    auto& l = callbacks[key];
+
+    l.erase(std::remove_if(l.begin(), l.end(),
+                           [&](auto& cb) {
+                               auto res = cb(key, data, bot, choice);
                                // TODO we support errors? apparently? probably no good
                                return *res.val != qb::Result::Value::PersistCallback;
                            }),

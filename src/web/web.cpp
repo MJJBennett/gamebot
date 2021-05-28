@@ -52,7 +52,7 @@ void web::context::initialize()
 
 web::context::~context()
 {
-    if (initialized_) shutdown(true);
+    if (initialized_) shutdown(false);
 }
 
 void web::context::shutdown(bool soft)
@@ -205,10 +205,16 @@ nlohmann::json web::context::post(Endpoint ep, const std::vector<std::string>& s
 nlohmann::json web::context::post(Endpoint ep, const std::string& specifier, const std::string& body)
 {
     assert(initialized_);
+    return post(endpoint_str(ep, specifier), body);
+}
+
+nlohmann::json web::context::post(const std::string& specifier, const std::string& body)
+{
+    assert(initialized_);
 
     qb::log::func("Creating HTTP Post request.");
     // Set up an HTTP POST request message
-    http::request<http::string_body> req{http::verb::post, endpoint_str(ep, specifier), qb::http_version};
+    http::request<http::string_body> req{http::verb::post, specifier, qb::http_version};
     req.set(http::field::host, qb::urls::base);
     req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
     req.set(http::field::authorization, "Bot " + qb::detail::get_bot_token());
@@ -236,13 +242,13 @@ nlohmann::json web::context::post(Endpoint ep, const std::string& specifier, con
     qb::log::func(" ...Receiving POST response.");
     if (read(buffer, res) == Result::retry)
     {
-        return post(ep, specifier, body);
+        return post(specifier, body);
     }
 
     // for (auto const& field : res) qb::log::point("field: ", field.name_string(), " | value: ", field.value());
 
     // If we're using interactions, we don't need the response.
-    if (ep == Endpoint::interactions)
+    if (res.find("X-RateLimit-Remaining") == res.end())
     {
         return {};
     }
@@ -260,6 +266,7 @@ nlohmann::json web::context::post(Endpoint ep, const std::string& specifier, con
 
     return qb::json_utils::parse_safe(res.body());
 }
+
 nlohmann::json web::context::patch(const std::string& uri, const std::string& body)
 {
     assert(initialized_);
