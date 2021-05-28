@@ -3,6 +3,7 @@
 
 #include "api/channel.hpp"
 #include "api/reaction.hpp"
+#include "api/interaction.hpp"
 #include "components/action.hpp"
 #include "components/queue.hpp"
 #include "utils/async_stdin.hpp"
@@ -70,6 +71,7 @@ private:
 public: /** Send is a part of our public API currently. */
     // Sends a message in a Discord channel.
     nlohmann::json send(std::string msg, std::string channel);
+    nlohmann::json send_json(const nlohmann::json& json, std::string channel);
     nlohmann::json send_test(std::string msg, std::string channel);
 
     // UNIMPLEMENTED
@@ -77,6 +79,7 @@ public: /** Send is a part of our public API currently. */
 
     void on_message_id(std::string message_id, ActionCallback action);
     void on_message_reaction(const api::Message& message, BasicAction<api::Reaction> action);
+    void on_message_interaction(const std::string& key, BasicAction<api::Interaction> action);
 
     // scary, will be removed one day
     web::context* get_context()
@@ -96,7 +99,6 @@ private:
     /** Command handlers. **/
     void print(const std::string& cmd, const std::string& channel);
     void test(const std::string& cmd, const std::string& channel);
-    void queue(const std::string& cmd, const nlohmann::json& data);
     void store(const std::string& cmd, const std::string& channel);
     void recall(const std::string& cmd, const std::string& channel);
     void list(const std::string& cmd, const std::string& channel);
@@ -148,6 +150,8 @@ private:
     ::qb::MultiActions<api::Message> message_id_callbacks_;
 
     ::qb::MultiActions<api::Reaction> message_reaction_callbacks_;
+
+    ::qb::MultiActions<api::Interaction> message_interaction_callbacks_;
 
 private:
     // Heartbeat data (opcode 1). Sent across WebSocket connection at regular intervals.

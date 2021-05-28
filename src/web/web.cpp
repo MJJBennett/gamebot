@@ -52,7 +52,7 @@ void web::context::initialize()
 
 web::context::~context()
 {
-    if (initialized_) shutdown(true);
+    if (initialized_) shutdown(false);
 }
 
 void web::context::shutdown(bool soft)

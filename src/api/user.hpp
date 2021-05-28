@@ -17,6 +17,8 @@ public:
     }
     User(const std::string& id) : id(id){}
 
+    User(const User& other) : id(other.id), username(other.username) {}
+
     template <bool safe = false>
     static User create(const nlohmann::json& source)
     {

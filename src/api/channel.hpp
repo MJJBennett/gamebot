@@ -12,6 +12,8 @@ struct Channel
     {
     }
 
+    Channel(const Channel& other) : id(other.id), guild(other.guild) {}
+
     const std::string id;
     const std::string guild;
 };

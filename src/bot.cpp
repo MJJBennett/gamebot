@@ -2,6 +2,7 @@
 
 #include "components/games/gamequeue.hpp"
 #include "components/games/hangman.hpp"
+#include "components/tools/normal_commands.hpp"
 #include "components/messages.hpp"
 #include "components/sentiment.hpp"
 #include "components/tools/sprint.hpp"
@@ -165,8 +166,11 @@ void qb::Bot::handle_event(const json& payload)
     }
     else if (et == "INTERACTION_CREATE")
     {
-        qb::log::point("An interaction was sent.");
-        const auto d = payload["d"];
+        qb::log::point("An interaction was sent. Executing callbacks.");
+        const auto d = api::Interaction::create(payload["d"]);
+        execute_callbacks<qb::api::Interaction>(*this, d.key(), d, message_interaction_callbacks_);
+         
+        /*
         if (const auto interact_id = j::get_opt<std::string>(d, "id"); interact_id)
         {
             if (const auto interact_tok = j::get_opt<std::string>(d, "token"); interact_tok)
@@ -178,6 +182,7 @@ void qb::Bot::handle_event(const json& payload)
                     interact_json.dump());
             }
         }
+        */
     }
     else if (et == "READY")
     {
@@ -192,11 +197,12 @@ void qb::Bot::handle_event(const json& payload)
     else if (et == "MESSAGE_REACTION_ADD" || et == "MESSAGE_REACTION_REMOVE")
     {
         qb::log::point("A reaction was added to a message.");
+        // Message that was reacted to
         auto msg = api::Reaction::create(payload["d"]);
         // TODO should really just be passing the message...
         qb::log::point("Execute relevant callbacks.");
 
-        execute_callbacks<qb::api::Reaction>(*this, msg.message_id, payload["d"], message_reaction_callbacks_,
+        execute_callbacks<qb::api::Reaction>(*this, msg.message_id, msg, message_reaction_callbacks_,
                                              et == "MESSAGE_REACTION_ADD");
     }
 }
@@ -274,8 +280,27 @@ nlohmann::json qb::Bot::send(std::string msg, std::string channel)
              channel);
         return {};
     }
-    json msg_json{{"content", msg}};
+    nlohmann::json msg_json{{"content", msg}};
     const auto resp = web_ctx_->post(web::Endpoint::channels, channel, msg_json.dump());
+    if (!identity_)
+    {
+        identity_ = resp["author"]["id"];
+        qb::log::point("Setting identity to: ", *identity_);
+    }
+    if (log_loud_) qb::log::data("Response", resp.dump(2));
+    return resp;
+}
+
+nlohmann::json qb::Bot::send_json(const nlohmann::json& msg, std::string channel)
+{
+    if (msg.value("content", "").size() > 2000)
+    {
+        send("I can't do that. [Message length too large: " + std::to_string(msg["content"].size()) +
+                 " - Must be 2000 or less.]",
+             channel);
+        return {};
+    }
+    const auto resp = web_ctx_->post(web::Endpoint::channels, channel, msg.dump());
     if (!identity_)
     {
         identity_ = resp["author"]["id"];
@@ -308,6 +333,15 @@ void qb::Bot::on_message_reaction(const api::Message& message, BasicAction<api::
         message_reaction_callbacks_.try_emplace(message.id);
     }
     message_reaction_callbacks_[message.id].emplace_back(std::move(action));
+}
+
+void qb::Bot::on_message_interaction(const std::string& key, BasicAction<api::Interaction> action)
+{
+    if (message_interaction_callbacks_.find(key) == message_interaction_callbacks_.end())
+    {
+        message_interaction_callbacks_.try_emplace(key);
+    }
+    message_interaction_callbacks_[key].emplace_back(std::move(action));
 }
 
 /*****
@@ -740,6 +774,9 @@ void qb::Bot::start()
     qb::TodoComponent todos;
     todos.register_actions(actions_);
 
+    qb::CommandsComponent commands;
+    commands.register_actions(actions_);
+
     /**
      * Begin allowing completion handlers to fire.
      * Blocking call - anything after this is only executed after
@@ -774,7 +811,7 @@ void qb::Bot::shutdown()
         qb::log::warn("Error while attempting to disconnect websocket: ", e.what());
     }
     ws_.reset();
-    web_ctx_->shutdown(true);
+    web_ctx_->shutdown(false);
     qb::log::point("Shutdown completed.");
 }
 
