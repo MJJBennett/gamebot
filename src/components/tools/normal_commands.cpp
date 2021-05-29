@@ -70,7 +70,7 @@ void qb::CommandsComponent::register_actions(Actions<>& actions)
                     auto inner = nlohmann::json{{"type", 1}, {"components", nlohmann::json::array()}};
                     inner["components"].push_back(b);
                     f["components"].push_back(inner);
-                    qb::log::point("Responding with: ", f.dump(2));
+                    //qb::log::point("Responding with: ", f.dump(2));
                     bot.send_json(f, msg.channel.id);
                     qb::log::point("Finished responding to a link command.");
                     if (del && msg.id != "")
