@@ -24,6 +24,7 @@ struct BasicCommand
     std::string resp;
     int flags = 0;
     std::string second;
+    std::string third;
 };
 
 void qb::CommandsComponent::register_actions(Actions<>& actions)
@@ -40,12 +41,16 @@ void qb::CommandsComponent::register_actions(Actions<>& actions)
         if (cmd.size() >= 3)
         {
             auto bcr = BasicCommand{qb::parse::trim(cmd[1]), qb::parse::trim(cmd[2]),
-                                    BasicCommand::parse_flags(qb::parse::trim(cmd[0])), ""};
+                                    BasicCommand::parse_flags(qb::parse::trim(cmd[0])), "", ""};
             commands.emplace_back(std::move(bcr));
         }
         if (cmd.size() >= 4)
         {
             commands.back().second = cmd[3];
+        }
+        if (cmd.size() >= 5)
+        {
+            commands.back().third = cmd[4];
         }
     }
     for (const auto& cmd : commands)
@@ -54,13 +59,14 @@ void qb::CommandsComponent::register_actions(Actions<>& actions)
         {
             actions.try_emplace(
                 cmd.key, (BasicAction<api::Message>)[
-                    s = cmd.resp, label = cmd.second, del = (bool)(cmd.flags & 0b10)
+                    s = cmd.resp, label = cmd.second, mcontent = cmd.third, del = (bool)(cmd.flags & 0b10)
                 ](const std::string&, const api::Message& msg, Bot& bot) {
                     // we actually have to have an upper-tier actionrow...
                     qb::log::point("Responding to a link command.");
                     const nlohmann::json b{
                         {"type", 2}, {"label", (label.size() == 0 ? "link" : label)}, {"style", 5}, {"url", s}};
-                    auto f = nlohmann::json{{"content", "** **"}, {"components", nlohmann::json::array()}};
+                    auto f     = nlohmann::json{{"content", mcontent.empty() ? "** **" : mcontent},
+                                            {"components", nlohmann::json::array()}};
                     auto inner = nlohmann::json{{"type", 1}, {"components", nlohmann::json::array()}};
                     inner["components"].push_back(b);
                     f["components"].push_back(inner);
