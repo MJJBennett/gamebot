@@ -42,16 +42,27 @@ void qb::CommandsComponent::register_actions(Actions<>& actions)
         "linkme", (ActionCallback)[](const std::string& precmd, const api::Message& msg, Bot& bot) {
             // LINK, LABEL, MESSAGE CONTENTS
             const auto args = qb::parse::xsv(qb::parse::get_command_specifier(precmd));
-            if (args.empty()) return qb::Result::ok();
-            const nlohmann::json b{
-                {"type", 2}, {"label", pos_or(args, 1, "link")}, {"style", 5}, {"url", args[0]}};
-            auto f     = nlohmann::json{{"content", pos_or(args, 2, "** **")},
+            if (args.empty())
+            {
+                qb::log::point("Got no arguments; ignoring linkme command.");
+                return qb::Result::ok();
+            }
+            const nlohmann::json b{{"type", 2},
+                                   {"label", qb::parse::trim(pos_or(args, 1, "link"))},
+                                   {"style", 5},
+                                   {"url", qb::parse::trim(args[0])}};
+            auto f     = nlohmann::json{{"content", qb::parse::trim(pos_or(args, 2, "** **"))},
                                     {"components", nlohmann::json::array()}};
             auto inner = nlohmann::json{{"type", 1}, {"components", nlohmann::json::array()}};
             inner["components"].push_back(b);
             f["components"].push_back(inner);
-            // qb::log::point("Responding with: ", f.dump(2));
+            qb::log::point("Responding with: ", f.dump(2));
             bot.send_json(f, msg.channel.id);
+            if (msg.id != "")
+            {
+                auto endpoint = msg.endpoint();
+                bot.get_context()->del(endpoint);
+            }
             return qb::Result::ok();
         });
     const auto cmds = qb::fileio::readlines_nonempty(qb::config::commands_file());
