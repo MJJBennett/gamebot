@@ -11,7 +11,26 @@
 </head>
 <body>
     <h2 id="title">QueueBot Help</h2>
+    <div id="commands">
+
+    </div>
+
 </body>
+
 <script>
+// Get the search parameters
+var sps = (function () {
+    var query = window.location.search.substring(1);
+    var qs = parse_query_string(query);
+
+    var url = new URL(url_string);
+    var c = url.searchParams;
+})();
+var cmds_div = document.querySelector('#commands');
+for (const [key, value] of sps) {
+    pe = document.createElement('p'); 
+    pe.innerHTML = '<b>' + key + ':</b> ' + value;
+    cmds_div.appendChild(pe);
+}
 </script>
 </html>
