@@ -1,15 +1,98 @@
 #include "normal_commands.hpp"
 
 #include "bot.hpp"
+#include "components/config.hpp"
 #include "utils/fileio.hpp"
 #include "utils/parse.hpp"
 #include "utils/utils.hpp"
+
+struct BasicCommand
+{
+    static int parse_flags(const std::string& fs)
+    {
+        int i = 0;
+        for (const auto& f : qb::parse::split(fs, '|'))
+        {
+            if (f == "link")
+                i |= 0b1;
+            else if (f == "del")
+                i |= 0b10;
+        }
+        return i;
+    }
+    std::string key;
+    std::string resp;
+    int flags = 0;
+    std::string second;
+};
 
 void qb::CommandsComponent::register_actions(Actions<>& actions)
 {
     using namespace std::placeholders;
     register_all(actions, std::make_pair("poll", (BasicAction<api::Message>)std::bind(
                                                      &qb::CommandsComponent::add_poll, this, _1, _2, _3)));
+    const auto cmds = qb::fileio::readlines_nonempty(qb::config::commands_file());
+    std::vector<BasicCommand> commands;
+    for (const auto& c : cmds)
+    {
+        if (c[0] == '#') continue;
+        const auto cmd = qb::parse::xsv(c, ',');
+        if (cmd.size() >= 3)
+        {
+            auto bcr = BasicCommand{qb::parse::trim(cmd[1]), qb::parse::trim(cmd[2]),
+                                    BasicCommand::parse_flags(qb::parse::trim(cmd[0])), ""};
+            commands.emplace_back(std::move(bcr));
+        }
+        if (cmd.size() >= 4)
+        {
+            commands.back().second = cmd[3];
+        }
+    }
+    for (const auto& cmd : commands)
+    {
+        if (cmd.flags & 0b00000001)
+        {
+            actions.try_emplace(
+                cmd.key, (BasicAction<api::Message>)[
+                    s = cmd.resp, label = cmd.second, del = (bool)(cmd.flags & 0b10)
+                ](const std::string&, const api::Message& msg, Bot& bot) {
+                    // we actually have to have an upper-tier actionrow...
+                    qb::log::point("Responding to a link command.");
+                    const nlohmann::json b{
+                        {"type", 2}, {"label", (label.size() == 0 ? "link" : label)}, {"style", 5}, {"url", s}};
+                    auto f = nlohmann::json{{"content", "** **"}, {"components", nlohmann::json::array()}};
+                    auto inner = nlohmann::json{{"type", 1}, {"components", nlohmann::json::array()}};
+                    inner["components"].push_back(b);
+                    f["components"].push_back(inner);
+                    qb::log::point("Responding with: ", f.dump(2));
+                    bot.send_json(f, msg.channel.id);
+                    qb::log::point("Finished responding to a link command.");
+                    if (del && msg.id != "")
+                    {
+                        auto endpoint = msg.endpoint();
+                        bot.get_context()->del(endpoint);
+                    }
+                    return qb::Result::ok();
+                });
+            qb::log::point("Registered command for key: ", cmd.key);
+        }
+        else
+        {
+            actions.try_emplace(
+                cmd.key,
+                (BasicAction<api::Message>)[ s = cmd.resp, del = (bool)(cmd.flags & 0b10) ](
+                    const std::string&, const api::Message& msg, Bot& bot) {
+                    bot.send_json({{"content", s}}, msg.channel.id);
+                    if (del && msg.id != "")
+                    {
+                        auto endpoint = msg.endpoint();
+                        bot.get_context()->del(endpoint);
+                    }
+                    return qb::Result::ok();
+                });
+            qb::log::point("Registered command for key: ", cmd.key);
+        }
+    }
 }
 
 qb::Result qb::CommandsComponent::add_poll(const std::string& precmd, const api::Message& msg, Bot& bot)
@@ -67,11 +150,12 @@ qb::Result qb::CommandsComponent::add_poll(const std::string& precmd, const api:
                             .with_content("Sorry, that failed.")
                             .as_json();
                     }
-                    int cidval = cid[0] - 49;
+                    int cidval   = cid[0] - 49;
                     auto& option = poll.options.at(cidval);
                     option.votes += 1;
                     return api::Interaction::response()
-                        .with_content("Our friend " + un + " voted for " + option.name + " (Total: " + std::to_string(option.votes) + ")")
+                        .with_content("Our friend " + un + " voted for " + option.name +
+                                      " (Total: " + std::to_string(option.votes) + ")")
                         .as_json();
                 }(p[msgid]);
                 bot.send_json(resp, interaction);

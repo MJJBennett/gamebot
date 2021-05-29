@@ -19,14 +19,14 @@ struct Button
         return my_component;
     }
 
-    Button(std::string custom_id, std::string label) : custom_id(custom_id), label(label) {}
+    Button(std::string custom_id, std::string label, size_t style = 1) : custom_id(custom_id), label(label), style(style) {}
 
     // Button components have type of 2
     static constexpr size_t type = 2;
 
-    size_t style{1};
     std::string custom_id;
     std::string label;
+    size_t style{1};
 };
 } // namespace qb
 

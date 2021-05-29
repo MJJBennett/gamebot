@@ -13,6 +13,30 @@ TEST(Parse, remove_non_cmd)
     EXPECT_EQ(remove_non_cmd(b), "!qb do otherwise!");
 }
 
+TEST(Parse, xsv)
+{
+    std::string a{"this,is,a,simple string"};
+    std::string b{",send-help,\"Haha, good luck with that!\""};
+    std::string c{",send-help,\"Haha, good luck with that!\",\"Here's another one!\""};
+
+    std::vector<std::string> a_ans{"this", "is", "a", "simple string"};
+    std::vector<std::string> b_ans{"", "send-help", "Haha, good luck with that!"};
+    std::vector<std::string> c_ans{"", "send-help", "Haha, good luck with that!",
+                                   "Here's another one!"};
+
+    auto vts = [](std::vector<std::string> s) {
+        std::string ret{};
+        for (auto&& str : s)
+        {
+            ret += str;
+        }
+        return ret;
+    };
+
+    EXPECT_EQ(vts(xsv(a)), vts(a_ans));
+    EXPECT_EQ(vts(xsv(b)), vts(b_ans));
+}
+
 TEST(Parse, split)
 {
     std::string a{"this is a simple string"};

@@ -44,6 +44,30 @@ std::vector<std::string> qb::parse::split(const std::string& str, char delim)
     return v;
 }
 
+std::vector<std::string> qb::parse::xsv(const std::string& str, char delim)
+{
+    std::vector<std::string> v;
+    auto itr = str.begin();
+    while (itr != str.end())
+    {
+        // Find the delimiter
+        // Support quoting things, but poorly :)
+        const auto itr_end = *itr == '"' ? std::find(itr + 1, str.end(), '"') : std::find(itr, str.end(), delim);
+        if (itr_end != str.end() && *itr_end == '"')
+        {
+            v.push_back({itr + 1, itr_end});
+            if (itr_end + 1 == str.end()) break;
+            itr = itr_end + 2;
+        }
+        else {
+            v.push_back({itr, itr_end});
+            if (itr_end == str.end()) break;
+            itr = itr_end + 1;
+        }
+    }
+    return v;
+}
+
 std::string qb::parse::remove_non_cmd(std::string str)
 {
     auto pred = [](char c) { return std::isalpha(c) || c == '!'; };

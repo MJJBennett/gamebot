@@ -17,7 +17,8 @@ inline json& get_config_()
                              {"emote_path", "../data/emote.kvs"},
                              {"todo_path", "../data/todo.txt"},
                              {"default_emote", ""},
-                             {"autoexec_path", "../data/autoexec.txt"}};
+                             {"autoexec_path", "../data/autoexec.txt"},
+                             {"commands_path", "../data/commands.txt"}};
     return conf_;
 }
 
@@ -49,6 +50,11 @@ inline std::string todo_data_file()
 inline std::string autoexec_file()
 {
     return get_config_()["autoexec_path"];
+}
+
+inline std::string commands_file()
+{
+    return get_config_()["commands_path"];
 }
 
 } // namespace qb::config
