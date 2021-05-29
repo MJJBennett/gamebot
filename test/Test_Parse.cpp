@@ -271,3 +271,9 @@ TEST(Parse, decompose_command_with_good_strings)
     // Numeric arguments
     EXPECT_EQ(cmd.numeric_arguments[0], 3421);
 }
+
+TEST(Parse, url_encode)
+{
+    EXPECT_EQ(url_encode("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"),
+              "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789");
+}

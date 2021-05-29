@@ -84,6 +84,8 @@ std::tuple<std::string, std::vector<std::string>> get_time(std::vector<std::stri
 std::tuple<std::string, std::vector<std::string>> match(std::string, std::vector<std::string>);
 bool match(std::string, std::string);
 
+std::string url_encode(const std::string& s);
+
 template <typename Type, typename Range>
 bool in(Type t, const Range& range)
 {

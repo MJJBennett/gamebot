@@ -32,6 +32,7 @@ public:
 public:
     // NORMAL FUNCTIONS
     qb::Result add_poll(const std::string& cmd, const api::Message& msg, Bot& bot);
+    qb::Result autodocs(const std::string&, const api::Message& msg, Bot& bot);
 
     void dump_debug() const;
 private:

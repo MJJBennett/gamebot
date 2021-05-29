@@ -358,3 +358,21 @@ bool qb::parse::compare_emotes(const std::string& s, const qb::api::Emoji& e)
     if (e.id) return compare_emotes(s, *e.id);
     return compare_emotes(s, *e.name);
 }
+
+std::string qb::parse::url_encode(const std::string& s)
+{
+    std::string res;
+    for (const unsigned char c : s)
+    {
+        if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~')
+        {
+            res += c;
+            continue;
+        }
+        continue;
+
+        res += '%';
+        res += std::to_string(static_cast<int>(c));
+    }
+    return res;
+}

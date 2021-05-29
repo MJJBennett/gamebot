@@ -36,8 +36,11 @@ const std::string& pos_or(const std::vector<std::string>& v, const size_t pos, c
 void qb::CommandsComponent::register_actions(Actions<>& actions)
 {
     using namespace std::placeholders;
-    register_all(actions, std::make_pair("poll", (BasicAction<api::Message>)std::bind(
-                                                     &qb::CommandsComponent::add_poll, this, _1, _2, _3)));
+    register_all(actions,
+                 std::make_pair("poll", (BasicAction<api::Message>)std::bind(
+                                            &qb::CommandsComponent::add_poll, this, _1, _2, _3)),
+                 std::make_pair("autodoc", (BasicAction<api::Message>)std::bind(
+                                               &qb::CommandsComponent::autodocs, this, _1, _2, _3)));
     actions.try_emplace(
         "linkme", (ActionCallback)[](const std::string& precmd, const api::Message& msg, Bot& bot) {
             // LINK, LABEL, MESSAGE CONTENTS
@@ -132,6 +135,65 @@ void qb::CommandsComponent::register_actions(Actions<>& actions)
             qb::log::point("Registered command for key: ", cmd.key);
         }
     }
+}
+
+qb::Result qb::CommandsComponent::autodocs(const std::string&, const api::Message& msg, Bot& bot)
+{
+    using qb::parse::startswith;
+
+    std::string base_uri{"https://mjjbennett.github.io/gamebot/index.html?"};
+    std::string search_params;
+
+    const auto cmds = qb::fileio::readlines_nonempty(qb::config::commands_file());
+    bool prepend    = false;
+
+    for (size_t i = 0; i < (cmds.size() - 4); i++)
+    {
+        if (cmds[i][0] == '#') continue;
+        const auto cmd = qb::parse::xsv(cmds[i], ',');
+        if (cmd.size() < 3) continue; // invalid for the time being
+        auto bcr = BasicCommand{qb::parse::trim(cmd[1]), qb::parse::trim(cmd[2]),
+                                BasicCommand::parse_flags(qb::parse::trim(cmd[0])), "", ""};
+        if (cmd.size() >= 4)
+        {
+            bcr.second = cmd[3];
+        }
+        if (cmd.size() >= 5)
+        {
+            bcr.third = cmd[4];
+        }
+
+        if (prepend) search_params += '&';
+        search_params += qb::parse::url_encode(bcr.key);
+        search_params += '=';
+        if (i > 0 && startswith(cmds[i-1], "##"))
+        {
+            search_params += qb::parse::url_encode(cmds[i - 1].substr(2));
+        }
+        else
+        {
+            search_params += qb::parse::url_encode("Prints a " + ((bcr.flags & 0b1) ? std::string{"link, with url: "} : "message, that reads: ") + bcr.resp);
+        }
+        prepend = true;
+    }
+
+    // max length is 512 :/
+    const std::string full_uri = base_uri + search_params;
+
+    const nlohmann::json b{{"type", 2}, {"label", "QueueBot AutoDoc!"}, {"style", 5}, {"url", full_uri}};
+    auto f     = nlohmann::json{{"content", "** **"}, {"components", nlohmann::json::array()}};
+    auto inner = nlohmann::json{{"type", 1}, {"components", nlohmann::json::array()}};
+    inner["components"].push_back(b);
+    f["components"].push_back(inner);
+    qb::log::point(f.dump(2));
+    const auto res = bot.send_json(f, msg.channel.id);
+    qb::log::point(res.dump(2));
+    if (msg.id != "")
+    {
+        auto endpoint = msg.endpoint();
+        bot.get_context()->del(endpoint);
+    }
+    return qb::Result::ok();
 }
 
 qb::Result qb::CommandsComponent::add_poll(const std::string& precmd, const api::Message& msg, Bot& bot)
