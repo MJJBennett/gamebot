@@ -27,11 +27,33 @@ struct BasicCommand
     std::string third;
 };
 
+const std::string& pos_or(const std::vector<std::string>& v, const size_t pos, const std::string& alt)
+{
+    if (v.size() > pos && v.at(pos) != "") return v[pos];
+    return alt;
+}
+
 void qb::CommandsComponent::register_actions(Actions<>& actions)
 {
     using namespace std::placeholders;
     register_all(actions, std::make_pair("poll", (BasicAction<api::Message>)std::bind(
                                                      &qb::CommandsComponent::add_poll, this, _1, _2, _3)));
+    actions.try_emplace(
+        "linkme", (ActionCallback)[](const std::string& precmd, const api::Message& msg, Bot& bot) {
+            // LINK, LABEL, MESSAGE CONTENTS
+            const auto args = qb::parse::xsv(qb::parse::get_command_specifier(precmd));
+            if (args.empty()) return qb::Result::ok();
+            const nlohmann::json b{
+                {"type", 2}, {"label", pos_or(args, 1, "link")}, {"style", 5}, {"url", args[0]}};
+            auto f     = nlohmann::json{{"content", pos_or(args, 2, "** **")},
+                                    {"components", nlohmann::json::array()}};
+            auto inner = nlohmann::json{{"type", 1}, {"components", nlohmann::json::array()}};
+            inner["components"].push_back(b);
+            f["components"].push_back(inner);
+            // qb::log::point("Responding with: ", f.dump(2));
+            bot.send_json(f, msg.channel.id);
+            return qb::Result::ok();
+        });
     const auto cmds = qb::fileio::readlines_nonempty(qb::config::commands_file());
     std::vector<BasicCommand> commands;
     for (const auto& c : cmds)
@@ -70,7 +92,7 @@ void qb::CommandsComponent::register_actions(Actions<>& actions)
                     auto inner = nlohmann::json{{"type", 1}, {"components", nlohmann::json::array()}};
                     inner["components"].push_back(b);
                     f["components"].push_back(inner);
-                    //qb::log::point("Responding with: ", f.dump(2));
+                    // qb::log::point("Responding with: ", f.dump(2));
                     bot.send_json(f, msg.channel.id);
                     qb::log::point("Finished responding to a link command.");
                     if (del && msg.id != "")
